@@ -1,0 +1,14 @@
+# sensitive files (don't be dumb!)
+.env
+
+# Python folders
+.venv/*
+src/api/__pycache__/*
+__pycache__/*
+
+# VSCode-related folders
+.devcontainer/*
+.vscode/*
+
+# GitHub folders
+.github/*
