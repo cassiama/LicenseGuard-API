@@ -1,9 +1,17 @@
-from pydantic_settings import BaseSettings
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
 
 class Settings(BaseSettings):
-    openai_api_key: str
+    model_config = SettingsConfigDict(
+        env_file=ROOT / ".env", env_file_encoding='utf-8')
 
-    class Config:
-        env_file = '.env'
-    
-settings = Settings()
+    openai_api_key: SecretStr
+
+
+if __name__ == "__main__":
+    settings = Settings()
+    print(settings.model_dump())

@@ -1,0 +1,11 @@
+# Python-related files & folders
+.venv/
+__pycache__/
+*.pyc
+
+# Git-related files & folders
+.git/
+.gitignore
+
+# Sensitive files (don't be dumb!)
+.env
