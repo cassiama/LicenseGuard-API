@@ -9,6 +9,7 @@ __pycache__/
 # VSCode-related folders
 .devcontainer/*
 .vscode/*
+*.code-workspace
 
 # GitHub folders
 .github/*
