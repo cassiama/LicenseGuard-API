@@ -10,36 +10,45 @@ Here's what it offers:
 LicenseGuard simplifies the process of checking software licenses, giving you a quick and clear picture of your project's licensing landscape.
 
 
-## Dependencies: API Server
-- Python 3.13.6+
-- uv 0.8.9+
-- [FastAPI](https://github.com/fastapi/fastapi)
-- [LangChain](https://github.com/langchain-ai/langchain/blob/master/docs/docs/introduction.mdx)
-- [LangChain-OpenAI](https://python.langchain.com/srv_reference/openai/chat_models/langchain_openai.chat_models.base.ChatOpenAI.html)
-- [Pydantic](https://github.com/pydantic/pydantic)
-- [Pydantic-Settings](https://github.com/pydantic/pydantic-settings)
+## Quickstart
+The fastest and easiest way to get this running on your machine is to use Docker. 
 
-## Quickstart: API Server
-Below is a basic guide to running the API server, either locally on your machine or by containerizating it. No, it doesn't really matter what OS you run this on (especially since Docker is an option) AFAIK.
-
-Since we're using FastAPI for the server, you can view the documentation at the `/docs` route... wherever you end up running it.
 
 ### Requirements
-You *WILL* need an OpenAI API key. You can throw it in an environment variable or an `.env` file - whichever you prefer. Just make sure that you:
-- initialize it at the top level of the repo, and
-- call the variable `OPENAI_API_KEY`, otherwise Pydantic Settings will throw errors.
+Make sure you have Docker Desktop (or Docker Engine) installed on your machine. If you don't, download it from [Docker's website](https://docs.docker.com/get-started/get-docker/).
 
-### Local Usage
-If you want to try out the API server locally, you can easily run it by navigating to the `src/srv/` directory and running the following command:
-```bash
-fastapi dev app.py
-```
-> Alternately, if you prefer `uv`, you can run `uv run fastapi dev` instead.
+You *WILL* need an OpenAI API key. You can throw it into an environment variable or an `.env` file - whichever you prefer. Just make sure that you call the variable `OPENAI_API_KEY`, otherwise the server will fail to run and you will see errors.
 
-### Containerization
-This repo comes with a Dockerfile if you're interested in deploying it with Docker. In the future, we will have Docker Compose file once the frontend service is added to the project.
 
-In order to run the API server, you must do the following:
+### Usage
+Run the following command to download the image on your machine: `docker pull licenseguard/license-guard:api-latest`.
+> If you want a specific version, then pull the `licenseguard/license-guard:api-v{x.y.z}` image instead (`x.y.z` refers to the [semantic verisoning number](https://semver.org/)).
 
-1. Build the Docker image by running `docker build -t LicenseGuard-API .` in the terminal.
-2. Run the Docker image by running `docker run -p 80:80 --env-file .env LicenseGuard-API` in the terminal. Make sure you're in the root directory when you run this command! You can access the server at `http://localhost:80`.
+**With `.env` file:**
+Run the Docker image by running `docker run -p 80:80 --env-file .env licenseguard/license-guard:api-latest` in the terminal.
+
+**With an environment variable:**
+Run the Docker image by running `docker run -p 80:80 -e OPENAI_API_KEY=YOUR_ACTUAL_API_KEY licenseguard/license-guard:api-latest` in the terminal.
+
+You can access the server at `http://localhost:80`.
+
+Once you have the server running, you can view the documentation by navigating to `http://localhost:80/docs`.
+
+
+## Available Routes
+For the latest image of the API on Docker Hub, you can access the following routes:
+- `GET /`: Returns a JSON response with a message that says "Hello World!":
+    - Sample Response:
+        ```json
+        {
+            "message": "Hello World!"
+        }
+        ```
+- `POST /llm/guess`: Takes a string (the prompt to the LLM) as its body. The LLM expects a prompt that lists Python packages. Returns a JSON response that guesses the licenses of the packages mentioned in the prompt.
+    - Sample Request: `"numpy, matplotlib, uv"`
+    - Sample Response:
+        ```json
+        {
+            "text": "Based on the software packages you've mentioned:\n\n1. **NumPy** - This package is typically licensed under the BSD License.\n2. **Matplotlib** - This package is usually licensed under the Matplotlib License, which is a permissive license similar to the BSD License.\n3. **uv** - I'm not familiar with a specific software package named \"uv.\" If you could provide more context or details about it, I might be able to help further.\n\nIf you have any other packages or need more information, feel free to ask!"
+        }
+        ```
