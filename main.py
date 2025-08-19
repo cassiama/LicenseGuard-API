@@ -1,5 +1,5 @@
 def main():
-    print("Hello from license-guard!")
+    print("Hello from LicenseGuard-API!")
 
 
 if __name__ == "__main__":

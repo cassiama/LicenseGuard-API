@@ -435,7 +435,7 @@ wheels = [
 ]
 
 [[package]]
-name = "license-guard"
+name = "LicenseGuard-API"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

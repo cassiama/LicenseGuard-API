@@ -3,7 +3,7 @@
 - uv 0.8.9+
 - [FastAPI](https://github.com/fastapi/fastapi)
 - [LangChain](https://github.com/langchain-ai/langchain/blob/master/docs/docs/introduction.mdx)
-- [LangChain-OpenAI](https://python.langchain.com/api_reference/openai/chat_models/langchain_openai.chat_models.base.ChatOpenAI.html)
+- [LangChain-OpenAI](https://python.langchain.com/srv_reference/openai/chat_models/langchain_openai.chat_models.base.ChatOpenAI.html)
 - [Pydantic](https://github.com/pydantic/pydantic)
 - [Pydantic-Settings](https://github.com/pydantic/pydantic-settings)
 
@@ -18,7 +18,7 @@ You *WILL* need an OpenAI API key. You can throw it in an environment variable o
 - call the variable `OPENAI_API_KEY`, otherwise Pydantic Settings will throw errors.
 
 ## Local Usage
-If you want to try out the backend server locally, you can easily run it by navigating to the `src/api/` directory and running the following command:
+If you want to try out the backend server locally, you can easily run it by navigating to the `src/srv/` directory and running the following command:
 ```bash
 fastapi dev app.py
 ```
@@ -29,5 +29,5 @@ This repo comes with a Dockerfile if you're interested in deploying it with Dock
 
 In order to run the backend server, you must do the following:
 
-1. Build the Docker image by running `docker build -t license-guard .` in the terminal.
-2. Run the Docker image by running `docker run -p 80:80 --env-file .env license-guard` in the terminal. Make sure you're in the root directory when you run this command! You can access the server at `http://localhost:80`.
+1. Build the Docker image by running `docker build -t LicenseGuard-API .` in the terminal.
+2. Run the Docker image by running `docker run -p 80:80 --env-file .env LicenseGuard-API` in the terminal. Make sure you're in the root directory when you run this command! You can access the server at `http://localhost:80`.

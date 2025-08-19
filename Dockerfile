@@ -16,4 +16,4 @@ RUN uv sync --frozen --no-cache
 ENV PATH="/app/.venv/bin:${PATH}"
 
 # Run the application.
-CMD ["/app/.venv/bin/fastapi", "run", "src/api/app.py", "--port", "80", "--host", "0.0.0.0"]
+CMD ["/app/.venv/bin/fastapi", "run", "src/srv/app.py", "--port", "80", "--host", "0.0.0.0"]
