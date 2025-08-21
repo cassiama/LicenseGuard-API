@@ -1,6 +1,6 @@
 from uuid import uuid4
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import date, datetime
 from typing import Optional
 
@@ -14,6 +14,8 @@ class Status(str, Enum):
 
 class Project(BaseModel):
     """Represents a single analysis project."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: str = Field(default_factory=lambda: uuid4().hex,
                     description="Project ID (UUID hex)")
     name: str = Field(min_length=1, max_length=100)
