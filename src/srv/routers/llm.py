@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
-from ..schemas import Prompt, Response
+from ..schemas import LlmPrompt, LlmResponse
 from core.config import Settings
 
 router = APIRouter(prefix="/llm", tags=["llm"])
@@ -13,8 +13,8 @@ llm = ChatOpenAI(
 )
 
 
-@router.post("/guess", response_model=Response)
-async def chat(body: Prompt) -> Response:
+@router.post("/guess", response_model=LlmResponse, deprecated=True)
+async def chat(body: LlmPrompt) -> LlmResponse:
     """Uses a LLM to guess the licenses of the packages mentioned in the prompt.
 
     Keyword arguments:
@@ -31,4 +31,4 @@ async def chat(body: Prompt) -> Response:
         )
     ])
 
-    return Response(text=str(msg.content))
+    return LlmResponse(text=str(msg.content))
