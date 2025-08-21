@@ -1,6 +1,6 @@
+import requirements
 from typing import List
 from fastapi import HTTPException, UploadFile, status
-import requirements
 
 # only .txt files are allowed to be uploaded
 ALLOWED_CONTENT_TYPES = ("text/plain",)

@@ -1,5 +1,4 @@
-import io
-import pytest
+import io, pytest
 from starlette.datastructures import Headers
 from fastapi import HTTPException
 from fastapi.datastructures import UploadFile
