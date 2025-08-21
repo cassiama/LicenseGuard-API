@@ -32,7 +32,7 @@ Run the Docker image by running `docker run -p 80:80 -e OPENAI_API_KEY=YOUR_ACTU
 
 > NOTE: This command runs the server in **production** mode, not dev mode.
 
-> NOTE: **You** are responsible for any HTTPS-related concerns. Please view [FastAPI's documentation on HTTPS](https://fastapi.tiangolo.com/deployment/https/) for more information.
+> NOTE: **You** are responsible for any HTTPS-related concerns. For example, if you are running this behind a TLS Termination Proxy, you need to [add "--proxy-headers" to the `CMD` line in the Dockerfile](https://fastapi.tiangolo.com/deployment/docker/#behind-a-tls-termination-proxy). Please view [FastAPI's documentation on HTTPS](https://fastapi.tiangolo.com/deployment/https/) for more general information on this topic.
 
 You can access the server at `http://localhost:80`.
 
