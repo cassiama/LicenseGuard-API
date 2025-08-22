@@ -26,9 +26,14 @@ def client() -> Generator[TestClient, None, None]:
 # helper for POSTing a multipart file
 @pytest.fixture
 def post_file(client: TestClient):
-    def _post(filename: str, data: bytes, content_type: str = "text/plain"):
+    def _post(
+        filename: str,
+        data: bytes,
+        content_type: str = "text/plain",
+        form: dict | None = None
+    ):
         files = {"file": (filename, io.BytesIO(data), content_type)}
-        return client.post("/analyze", files=files)
+        return client.post("/analyze", files=files, data=form or {})
     return _post
 
 # helper class for seeding the *mock* DB
