@@ -47,6 +47,33 @@ class StatusResponse(BaseModel):
     result: Optional[AnalyzeResult] = Field(default=None)
     timestamp: datetime = Field(default_factory=lambda: datetime.now())
 
+    # example responses (from tests/conftest.py):
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": "776eaf11601c429783d23248b361d2b8",
+                    "status": "completed",
+                    "result": {
+                        "project_name": "MyCoolCompleteProject",
+                        "analysis_date": str(date.today()),
+                        "files": [
+                            {"name": "contourpy", "version": "1.3.1",
+                            "license": "BSD-3-Clause", "confidence_score": 0.80},
+                            {"name": "contourpy", "version": "1.3.1",
+                            "license": "BSD-3-Clause", "confidence_score": 0.80}
+                        ]
+                    }
+                },
+                {
+                    "id": "9c2a06a435814724a8994ec9b48ff4cd",
+                    "status": "failed",
+                    "result": None
+                }
+            ]
+        }
+    }
+
 
 class AnalyzeResponse(BaseModel):
     """
@@ -55,6 +82,20 @@ class AnalyzeResponse(BaseModel):
     project_id: str
     status: Status
     result: Optional[AnalyzeResult] = None
+
+    # example responses (from tests/conftest.py):
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": "d1216a154352495db55d136982ebe475",
+                    "status": Status.IN_PROGRESS,
+                    "result": None
+                }
+            ]
+        }
+    }
+    
 
 # REST response schemas (deprecated)
 class LlmPrompt(BaseModel):
@@ -77,3 +118,4 @@ class ProjectRecord(BaseModel):
     created_at: datetime
     updated_at: datetime
     result: Optional[AnalyzeResult] = None
+
