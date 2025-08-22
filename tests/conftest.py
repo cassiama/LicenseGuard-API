@@ -61,7 +61,7 @@ def client_with_seed(client: TestClient):
 
     # seed two projects: one IN_PROGRESS with no result, one COMPLETED with result
     in_progress = ProjectRecord(
-        id="abc123" * 5 + "ab",  # 32 hex not required; TODO: force it to be valid UUIDv4
+        id="9c2a06a435814724a8994ec9b48ff4cd",
         name="MyLameIncompleteProject",
         status=Status.IN_PROGRESS,
         created_at=datetime.now(),
@@ -70,7 +70,7 @@ def client_with_seed(client: TestClient):
     )
 
     completed = ProjectRecord(
-        id="deadbeefdeadbeefdeadbeefdeadbeef",  # 32 hex not required; TODO: force it to be valid UUIDv4
+        id="776eaf11601c429783d23248b361d2b8",
         name="MyCoolCompleteProject",
         status=Status.COMPLETED,
         created_at=datetime.now(),

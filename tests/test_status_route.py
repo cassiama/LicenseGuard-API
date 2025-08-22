@@ -12,22 +12,28 @@ def test_status_404_not_found(client_with_seed):
     assert r.status_code == 404
     assert "not found" in r.text.lower()
 
+
 def test_status_200_in_progress_without_result(client_with_seed):
-    result = client_with_seed.get("/status/abc123abc123abc123abc123abc123ab")
+    result = client_with_seed.get("/status/9c2a06a435814724a8994ec9b48ff4cd")
     assert result.status_code == 200, result.text
-    json_obj = result.json()
-    assert json_obj["project_id"] == "abc123abc123abc123abc123abc123ab"
-    assert json_obj["status"] == "in_progress"
-    assert json_obj["result"] is None
-    # timestamp exists and is ISO-like
-    assert "timestamp" in json_obj and isinstance(json_obj["timestamp"], str)
+    body = result.json()
+    assert body["project_id"] == "9c2a06a435814724a8994ec9b48ff4cd"
+    assert HEX32.match(body["project_id"])
+    assert body["status"] == "in_progress"
+    assert body["result"] is None
+    assert "timestamp" in body and isinstance(body["timestamp"], str)
+
 
 def test_status_200_completed_with_result(client_with_seed):
-    result = client_with_seed.get("/status/deadbeefdeadbeefdeadbeefdeadbeef")
+    result = client_with_seed.get("/status/776eaf11601c429783d23248b361d2b8")
     assert result.status_code == 200, result.text
-    json_obj = result.json()
-    assert json_obj["status"] == "completed"
-    assert json_obj["result"]["project_name"] == "MyCoolCompleteProject"
-    assert isinstance(json_obj["result"]["files"], list) and json_obj["result"]["files"]
-    one = json_obj["result"]["files"][0]
-    assert set(one.keys()) >= {"name", "version", "license", "confidence_score"}
+    body = result.json()
+    assert body["project_id"] == "776eaf11601c429783d23248b361d2b8"
+    assert HEX32.match(body["project_id"])
+    assert body["status"] == "completed"
+    assert body["result"]["project_name"] == "MyCoolCompleteProject"
+    assert isinstance(body["result"]["files"],
+                      list) and body["result"]["files"]
+    file = body["result"]["files"][0]
+    assert set(file.keys()) >= {"name", "version",
+                                "license", "confidence_score"}
