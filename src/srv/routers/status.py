@@ -12,9 +12,11 @@ async def get_progress(
 ) -> StatusResponse:
     """
     Returns the status and (if present) result for a given project_id.
+
     Throws a 404 if the project_id does not exist.
 
     Keyword arguments:
+    
     project_id -- a valid UUIDv4 corresponding to a valid project_id
     """
     record = await db.get_project(project_id)

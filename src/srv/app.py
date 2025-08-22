@@ -1,7 +1,7 @@
 from typing import Annotated
 from datetime import datetime, date
 from uuid import uuid4
-from fastapi import FastAPI, UploadFile, File, Depends, BackgroundTasks, status
+from fastapi import FastAPI, Form, UploadFile, File, Depends, BackgroundTasks, status
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from core.config import Settings
@@ -23,11 +23,28 @@ llm = ChatOpenAI(
 )
 
 SYSTEM_PROMPT = (
-    "You are a careful license analysis assistant. "
-    "Given a Python requirements list, infer each package's SPDX license and a confidence score in [0,1]. "
-    "If unsure, choose the most likely SPDX identifier and lower confidence accordingly. "
-    "Only use SPDX identifiers for the 'license' field (e.g., MIT, Apache-2.0, BSD-3-Clause, GPL-3.0-only). "
-    "Today's date is {today}. Return ONLY structured data that matches the schema."
+    "You are a license analysis assistant.\n"
+    "Rules for the single `license` field:\n"
+    "• If and only if confidence_score == 1.0, set `license` to the full Trove classifier string "
+    "(e.g., 'License :: OSI Approved :: MIT License').\n"
+    "• Otherwise, set `license` to a valid SPDX identifier (e.g., MIT, Apache-2.0, BSD-3-Clause, GPL-3.0-only).\n"
+    "• confidence_score must be in the range of [0,1].\n"
+    "• Output MUST validate against the schema.\n"
+    "Today's date is {today}."
+)
+
+FEW_SHOT = (
+    "EXAMPLES (follow closely):\n"
+    "Input pkgs:\n"
+    "flask_socketio==5.5.1\n"
+    "# Classifiers indicate MIT specifically\n\n"
+    "Output item (since perfect Trove exists):\n"
+    "{\"name\":\"flask_socketio\",\"version\":\"5.5.1\",\"license\":\"License :: OSI Approved :: MIT License\",\"confidence_score\":1.0}\n"
+    "Input pkgs:\n"
+    "urllib3==2.2.2\n"
+    "# SPDX clearly says MIT; Trove may be generic or missing\n\n"
+    "Output item (no perfect Trove known):\n"
+    "{\"name\":\"urllib3\",\"version\":\"2.2.2\",\"license\":\"MIT\",\"confidence_score\":0.7}\n"
 )
 
 
@@ -38,7 +55,12 @@ async def root():
 
 
 # helper function that calls a OpenAI LLM to analyze dependencies and returns a structured output
-async def get_llm_analysis(project_id: str, reqs: list[str], db: DBClient):
+async def get_llm_analysis(
+    project_id: str,
+    project_name: str,
+    reqs: list[str],
+    db: DBClient
+):
     """
     Runs in a FastAPI BackgroundTask. Calls the LLM via LangChain with structured output
     and persists the result into the DB record. On error, marks FAILED.
@@ -48,38 +70,35 @@ async def get_llm_analysis(project_id: str, reqs: list[str], db: DBClient):
         structured_llm = llm.with_structured_output(AnalyzeResult)
 
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT.format(today=date.today().isoformat())),
-            # TODO: tell the LLM to use SPDX licensing format for the licenses.
+            SystemMessage(content=SYSTEM_PROMPT.format(
+                today=date.today().isoformat())),
             HumanMessage(content=(
-                "Here are the packages from requirements.txt (one per line):\n\n"
+                f"{FEW_SHOT}\n\n"
+                "Here are the packages from requirements.txt (one per line). "
+                "Remember the single-field rule for `license`:\n\n"
                 f"{"\n".join(reqs)}\n\n"
-                "Also include a project_name (you may infer 'untitled' if none provided) "
-                "and set analysis_date to today's date. Use the following guide to "
-                "determine the confidence score of the licenses: "
-                "1.0: Perfect classifier like \"License :: OSI Approved :: MIT License\""
-                "0.9: Multiple consistent indicators"
-                "0.7: Clear license field like \"MIT\""
-                "0.5: Ambiguous like \"License :: OSI Approved\" (no specific license)"
-                "0.3: Vague like \"Apache\" (could be 1.0 or 2.0)"
-                "0.1: Very unclear like \"BSD\" (which variant?)"
+                f"Use this exact project name: {project_name} "
+                "(you may infer 'untitled' if none provided) "
+                "and set analysis_date to today's date. "
             ))
         ]
 
-        result = structured_llm.invoke(messages)
+        result: AnalyzeResult = AnalyzeResult.model_validate(await structured_llm.ainvoke(messages))
 
         # persist the result & status to the DB
-        record = await db.get_project(project_id)
+        record: ProjectRecord | None = await db.get_project(project_id)
         if record is None:
             # if record didn't persist to the DB yet (rare and shouldn't happen, but possible), create a small one to store result
             record = ProjectRecord(
                 id=project_id,
-                name="untitled",
+                name=project_name,
                 status=Status.IN_PROGRESS,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
                 result=None,
             )
 
+        record.name = project_name
         record.result = result
         record.status = Status.COMPLETED
         record.updated_at = datetime.now()
@@ -92,8 +111,11 @@ async def get_llm_analysis(project_id: str, reqs: list[str], db: DBClient):
                 record.status = Status.FAILED
                 record.updated_at = datetime.now()
                 await db.upsert_project(record)
-        finally:    # regardless of even *that* failing, make sure to log that the LLM failed.
-            print(f"[{datetime.now()}] get_llm_analysis failed for {project_id}: {e}")
+        # regardless of even *that* failing, make sure to log that the LLM failed.
+        finally:
+            print(
+                f"[{datetime.now()}] get_llm_analysis failed for {project_id}: {e}")
+
 
 @app.post(
     "/analyze",
@@ -104,23 +126,35 @@ async def analyze_dependencies(
     file: Annotated[UploadFile, File(
         description="A requirements.txt file (text/plain).")],
     bg_tasks: BackgroundTasks,
-    # TODO: consider a project_name so that the user can actually name this project
     db: DBClient = Depends(get_db),
+    project_name: Annotated[str, Form(
+        description="The name of the project")] = "untitled",
 ) -> AnalyzeResponse:
     """
-    Accepts a requirements.txt file upload, analyzes each license associated with the dependencies in the 'requirements.txt' file, and returns a new project.
-    NOTE: Result is null until the analysis step is implemented.
+    Accepts a requirements.txt file upload and a project name, analyzes each license associated with the dependencies in the 'requirements.txt' file, and returns the analysis.
+
+    Throws a 400 if the uploaded file is empty.
+
+    Throws a 415 if the uploaded file has an unsupported MIME type.
+
+    Throws a 422 if:
+     - the uploaded file does not have a .txt extension.
+     - there is a Unicode decode error while processing the file.
+     - the requirements.txt file is invalid and cannot be parsed.
+     - no valid requirements are found in the file.
 
     Keyword arguments:
+
     file -- an non-empty 'requirements.txt'
+
+    project_name -- the name of your project (default: "untitled")
     """
     _reqs = await validate_requirements_file(file)  # validate & parse the requirements
 
     project_id = uuid4().hex
     record = ProjectRecord(
         id=project_id,
-        # name=project_name or "untitled",
-        name="untitled",
+        name=project_name,
         status=Status.IN_PROGRESS,
         created_at=datetime.now(),
         updated_at=datetime.now(),
@@ -128,7 +162,9 @@ async def analyze_dependencies(
     )
     await db.upsert_project(record)
 
-    bg_tasks.add_task(get_llm_analysis, project_id=project_id, reqs=_reqs, db=db) # call the LLM and let it handle the analysis of the requirements
+    # call the LLM as a background task and let it handle the analysis of the requirements
+    bg_tasks.add_task(get_llm_analysis,
+                      project_id=project_id, project_name=project_name, reqs=_reqs, db=db)
 
     return AnalyzeResponse(
         project_id=project_id,
