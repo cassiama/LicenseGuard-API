@@ -23,7 +23,7 @@ class Project(BaseModel):
 
 class DependencyReport(BaseModel):
     """AI agent output for a single project dependency."""
-    name: str = Field(min_length=5, max_length=200)
+    name: str = Field(min_length=2, max_length=200)
     version: str = Field(min_length=1, max_length=80)
     # all licenses must come from the SPDX database
     license: str = Field(min_length=2, max_length=100)
@@ -57,9 +57,6 @@ class AnalyzeResponse(BaseModel):
     result: Optional[AnalyzeResult] = None
 
 # REST response schemas (deprecated)
-# NOTE: all OpenAI-related schemas will be found in `openai_structures.py`
-
-
 class LlmPrompt(BaseModel):
     text: str
 
