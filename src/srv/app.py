@@ -16,10 +16,14 @@ app.include_router(llm_router.router)
 app.include_router(status_router.router)
 
 # LLM / OpenAI definitions
+settings = Settings()
+if not settings.openai_api_key:
+    raise RuntimeError("OPENAI_API_KEY is required to call the LLM.")
+
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0.0,
-    api_key=Settings().openai_api_key,
+    api_key=settings.openai_api_key,
 )
 
 SYSTEM_PROMPT = (

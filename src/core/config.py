@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=ROOT / ".env", env_file_encoding='utf-8')
 
-    openai_api_key: SecretStr
+    openai_api_key: SecretStr | None = None
 
 
 if __name__ == "__main__":

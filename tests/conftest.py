@@ -36,6 +36,11 @@ def post_file(client: TestClient):
         return client.post("/analyze", files=files, data=form or {})
     return _post
 
+# helper for setting the OpenAI API key to some fake value
+@pytest.fixture(autouse=True)
+def _set_fake_openai_key(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+
 # helper class for seeding the *mock* DB
 # NOTE: once a real DB is implemented, this will change
 class SeededDB:
