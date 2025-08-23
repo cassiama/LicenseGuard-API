@@ -10,11 +10,13 @@ LABEL org.opencontainers.image.source="https://github.com/cassiama/LicenseGuard-
 # Install uv.
 COPY --from=ghcr.io/astral-sh/uv@sha256:cda9608307dbbfc1769f3b6b1f9abf5f1360de0be720f544d29a7ae2863c47ef /uv /uvx /bin/
 
+# Set the working dir before copying project metadata.
+WORKDIR /api
+
 # Copy the project metadata first to leverage build cache.
 COPY pyproject.toml uv.lock ./
 
 # Install the application dependencies.
-WORKDIR /api
 RUN uv sync --frozen --no-cache
 
 # Copy the rest of the application code.
