@@ -11,6 +11,3 @@ __pycache__/
 .devcontainer/
 .vscode/
 *.code-workspace
-
-# GitHub folders - will remove once the CI/CD pipeline is set up
-.github/*
