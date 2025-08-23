@@ -1,0 +1,82 @@
+name: Release images (tags -> Docker Hub + GHCR)
+
+on:
+  push:
+    tags: ["v*"]   # e.g., v0.1.0, v0.2.0-alpha, etc.
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write      # allow push to GHCR via GITHUB_TOKEN
+      attestations: write  # allow provenance attestations
+      id-token: write      # OIDC signing for provenance
+    env:
+      # accounts & image names
+      DOCKERHUB_IMAGE: licenseguard/license-guard
+      GHCR_IMAGE: ghcr.io/cassiama/license-guard
+      VERSION: ${{ github.ref_name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Step 1: log into both registries
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 2: enable cross-arch builds & Buildx
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      # Step 3: generate tags & labels for BOTH registries
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.DOCKERHUB_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
+          tags: |
+            type=raw,value=api-${{ env.VERSION }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      # Step 4: make builds reproducible by pinning build time
+      - name: Fix build timestamps (reproducible)
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> $GITHUB_ENV
+
+      # Step 5: build once, push to BOTH registries, attach SBOM & provenance
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+
+      # Step 6: publish extra GitHub attestations for auditability (it's nice to have)
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: index.docker.io/${{ env.DOCKERHUB_IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.GHCR_IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
