@@ -1,7 +1,9 @@
 # LicenseGuard (API)
+
 LicenseGuard is designed to help you easily understand the software licenses of your project's dependencies.
 
 Here's what it offers:
+
 - **Effortless License Checking**: Simply provide your project's `requirements.txt`, and LicenseGuard will analyze it for you.
 - **Clear License Identification**: The system identifies the software licenses associated with your dependencies.
 - **Understandable Reports**: Get a straightforward JSON report detailing the licenses found, along with a confidence score.
@@ -9,20 +11,33 @@ Here's what it offers:
 
 LicenseGuard simplifies the process of checking software licenses, giving you a quick and clear picture of your project's licensing landscape.
 
-
 ## Quickstart
-The fastest and easiest way to get this running on your machine is to use Docker. 
 
+The fastest and easiest way to get this running on your machine is to use Docker.
 
 ### Requirements
+
 Make sure you have Docker Desktop (or Docker Engine) installed on your machine. If you don't, download it from [Docker's website](https://docs.docker.com/get-started/get-docker/).
 
 You *WILL* need an OpenAI API key. You can throw it into an environment variable or an `.env` file - whichever you prefer. Just make sure that you call the variable `OPENAI_API_KEY`, otherwise the server will fail to run and you will see errors.
 
-
 ### Usage
-Run the following command to download the image on your machine: `docker pull licenseguard/license-guard:api-latest`.
+
+For the purposes of this guide, we're going to assume that you want to pull the image from Docker Hub. However, you can also download the image from the GitHub Container Registry (GHCR) instead if you'd like.
+
+#### Downloading the Docker Image
+
+Run the following command to download the image from Docker Hub on your machine:
+
+```bash
+docker pull licenseguard/license-guard:api-latest
+```
+
 > NOTE: If you want a specific version, then pull the `licenseguard/license-guard:api-v{x.y.z}` image instead (`x.y.z` refers to the [semantic verisoning number](https://semver.org/)).
+
+> NOTE: For those who prefer GHCR, replace any reference to `licenseguard/license-guard` with `ghcr.io/cassiama/license-guard` for any of the commands below, and you'll be good. 👍🏿
+
+#### Running the Docker Image
 
 **With `.env` file:**
 Run the Docker image by running `docker run -p 80:80 --env-file .env licenseguard/license-guard:api-latest` in the terminal.
@@ -38,21 +53,82 @@ You can access the server at `http://localhost:80`.
 
 Once you have the server running, you can view the documentation by navigating to `http://localhost:80/docs`.
 
-
 ## Available Routes
+
 For the latest image of the API on Docker Hub, you can access the following routes:
+
+- `POST /analyze`: Accepts a requirements.txt file upload and a project name, analyzes each license associated with the dependencies in the 'requirements.txt' file, and returns the analysis.
+  - Sample Request:
+    - a `requirements.txt` (`multipart/form-data`; should be `text/plain` MIME type),
+    - a name for your project (default: `"untitled"`)
+  - Sample Response:
+
+      ```json
+      {
+          "id": "d1216a154352495db55d136982ebe475",
+          "status": "in_progress",
+          "result": null
+      }
+      ```
+
+- `GET /status/{project_id}`: Returns the status and (if present) result for a given project_id.
+  - Sample Responses:
+    - Successful:
+
+      ```json
+      {
+        "id": "776eaf11601c429783d23248b361d2b8",
+        "status": "completed",
+        "result": {
+          "analysis_date": "2025-08-23",
+          "files": [
+            {
+              "confidence_score": 0.8,
+              "license": "BSD-3-Clause",
+              "name": "contourpy",
+              "version": "1.3.1"
+            },
+            {
+              "confidence_score": 0.8,
+              "license": "BSD-3-Clause",
+              "name": "contourpy",
+              "version": "1.3.1"
+            }
+          ],
+          "project_name": "MyCoolCompleteProject"
+        }
+      }
+      ```
+
+    - Failure:
+
+      ```json
+      {
+        "id": "9c2a06a435814724a8994ec9b48ff4cd",
+        "status": "failed",
+        "result": null
+      }
+      ```
+
+### Deprecated Routes
+
+The following routes are deprecated, so you should avoid using them. You can still access them if you want (not sure why, but you do you 🤷🏿‍♂️):
+
 - `GET /`: Returns a JSON response with a message that says "Hello World!":
-    - Sample LlmResponse:
-        ```json
-        {
-            "message": "Hello World!"
-        }
-        ```
+  - Sample Response:
+
+      ```json
+      {
+          "message": "Hello World!"
+      }
+      ```
+
 - `POST /llm/guess`: Takes a string (the prompt to the LLM) as its body. The LLM expects a prompt that lists Python packages. Returns a JSON response that guesses the licenses of the packages mentioned in the prompt.
-    - Sample Request: `"numpy, matplotlib, uv"`
-    - Sample LlmResponse:
-        ```json
-        {
-            "text": "Based on the software packages you've mentioned:\n\n1. **NumPy** - This package is typically licensed under the BSD License.\n2. **Matplotlib** - This package is usually licensed under the Matplotlib License, which is a permissive license similar to the BSD License.\n3. **uv** - I'm not familiar with a specific software package named \"uv.\" If you could provide more context or details about it, I might be able to help further.\n\nIf you have any other packages or need more information, feel free to ask!"
-        }
-        ```
+  - Sample Request: `"numpy, matplotlib, uv"`
+  - Sample Response:
+
+      ```json
+      {
+          "text": "Based on the software packages you've mentioned:\n\n1. **NumPy** - This package is typically licensed under the BSD License.\n2. **Matplotlib** - This package is usually licensed under the Matplotlib License, which is a permissive license similar to the BSD License.\n3. **uv** - I'm not familiar with a specific software package named \"uv.\" If you could provide more context or details about it, I might be able to help further.\n\nIf you have any other packages or need more information, feel free to ask!"
+      }
+      ```
