@@ -4,8 +4,6 @@ __pycache__/
 tests/
 *.pyc
 .python-version
-uv.lock
-pyproject.toml
 
 # Git-related files & folders
 .git/
