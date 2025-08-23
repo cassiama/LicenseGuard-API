@@ -1,11 +1,22 @@
 # Python-related files & folders
 .venv/
 __pycache__/
+tests/
 *.pyc
+.python-version
+uv.lock
+pyproject.toml
 
 # Git-related files & folders
 .git/
+.github/
 .gitignore
+README.md
+
+# VSCode-related folders
+.devcontainer/
+.vscode/
+*.code-workspace
 
 # Sensitive files (don't be dumb!)
 .env

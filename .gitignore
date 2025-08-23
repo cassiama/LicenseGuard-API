@@ -2,14 +2,15 @@
 .env
 
 # Python folders
-.venv/*
+.venv/
 __pycache__/
+.pytest_cache/
 *.pyc
 
 # VSCode-related folders
-.devcontainer/*
-.vscode/*
+.devcontainer/
+.vscode/
 *.code-workspace
 
-# GitHub folders
+# GitHub folders - will remove once the CI/CD pipeline is set up
 .github/*
