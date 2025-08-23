@@ -14,14 +14,14 @@ COPY --from=ghcr.io/astral-sh/uv@sha256:cda9608307dbbfc1769f3b6b1f9abf5f1360de0b
 COPY pyproject.toml uv.lock ./
 
 # Install the application dependencies.
-WORKDIR /app
+WORKDIR /src
 RUN uv sync --frozen --no-cache
 
 # Copy the rest of the application code.
 COPY . .
 
 # Use the project venv binaries on the PATH.
-ENV PATH="/app/.venv/bin:${PATH}"
+ENV PATH="/src/.venv/bin:${PATH}"
 
 # Run the application.
-CMD ["/app/.venv/bin/fastapi", "run", "src/srv/app.py", "--port", "80", "--host", "0.0.0.0"]
+CMD ["/src/.venv/bin/fastapi", "run", "src/srv/app.py", "--port", "80", "--host", "0.0.0.0"]
