@@ -1,8 +1,8 @@
 import io, sys, re, pytest, asyncio
 from pathlib import Path
-from fastapi.testclient import TestClient
 from datetime import datetime, date
 from typing import Generator
+from fastapi.testclient import TestClient
 
 # makes sure that "src" importable without setting PYTHONPATH manually
 ROOT = Path(__file__).resolve().parents[1]
