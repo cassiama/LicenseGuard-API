@@ -2,6 +2,7 @@ from typing import Annotated
 from datetime import datetime, date
 from uuid import uuid4
 from fastapi import FastAPI, Form, UploadFile, File, Depends, BackgroundTasks, status
+from fastapi.security import OAuth2PasswordBearer
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from core.config import Settings
@@ -13,6 +14,8 @@ from .validators import validate_requirements_file
 app = FastAPI(lifespan=lifespan)
 app.include_router(llm_router.router)   # all routes from this router are deprecated as of v0.2.0
 app.include_router(status_router.router)    # all routes from this router are deprecated as of v0.3.0
+
+oauth2 = OAuth2PasswordBearer(tokenUrl="token")
 
 # LLM / OpenAI definitions
 settings = Settings()
@@ -131,7 +134,7 @@ async def get_llm_analysis(
 async def analyze_dependencies(
     file: Annotated[UploadFile, File(
         description="A requirements.txt file (text/plain).")],
-    bg_tasks: BackgroundTasks,
+    _token: Annotated[str, Depends(oauth2)],
     db: DBClient = Depends(get_db),
     project_name: Annotated[str, Form(
         description="The name of the project")] = "untitled",
@@ -140,6 +143,8 @@ async def analyze_dependencies(
     Accepts a requirements.txt file upload and a project name, analyzes each license associated with the dependencies in the 'requirements.txt' file, and returns the analysis.
 
     Throws a 400 if the uploaded file is empty.
+
+    Throws a 401 if the user is unauthorized.
 
     Throws a 415 if the uploaded file has an unsupported MIME type.
 
