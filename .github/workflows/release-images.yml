@@ -22,7 +22,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Step 1: log into both registries
+      # Step 1: check that required secrets were delivered to this run
+      - name: Check required secrets
+        run: |
+          for v in DOCKERHUB_TOKEN GITHUB_TOKEN; do
+            if [ -z "${!v}" ]; then
+              echo "❌ Missing $v (not delivered to this run)."
+              exit 1
+            fi
+          done
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+
+      # Step 2: log into both registries
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -36,11 +49,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 2: enable cross-arch builds & Buildx
+      # Step 3: enable cross-arch builds & Buildx
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
-      # Step 3: generate tags & labels for BOTH registries
+      # Step 4: generate tags & labels for BOTH registries
       - id: meta
         uses: docker/metadata-action@v5
         with:
@@ -52,11 +65,11 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-      # Step 4: make builds reproducible by pinning build time
+      # Step 5: make builds reproducible by pinning build time
       - name: Fix build timestamps (reproducible)
         run: echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> $GITHUB_ENV
 
-      # Step 5: build once, push to BOTH registries, attach SBOM & provenance
+      # Step 6: build once, push to BOTH registries, attach SBOM & provenance
       - id: build
         uses: docker/build-push-action@v6
         with:
@@ -69,7 +82,7 @@ jobs:
           provenance: mode=max
           sbom: true
 
-      # Step 6: publish extra GitHub attestations for auditability (it's nice to have)
+      # Step 7: publish extra GitHub attestations for auditability (it's nice to have)
       - uses: actions/attest-build-provenance@v2
         with:
           subject-name: index.docker.io/${{ env.DOCKERHUB_IMAGE }}
