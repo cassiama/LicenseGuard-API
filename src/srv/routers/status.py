@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from ..schemas import StatusResponse
 from db.db import get_db, DBClient
+from ..schemas import StatusResponse
 
 router = APIRouter(prefix="/status", tags=["status"])
 
-
-@router.get("/{project_id}")
+# this route has been deprecated as of v0.3.0
+@router.get(
+    "/{project_id}",
+    response_model=StatusResponse,
+    status_code=status.HTTP_200_OK,
+    deprecated=True
+)
 async def get_progress(
     project_id: str,
     db: DBClient = Depends(get_db)
@@ -16,7 +21,7 @@ async def get_progress(
     Throws a 404 if the project_id does not exist.
 
     Keyword arguments:
-    
+
     project_id -- a valid UUIDv4 corresponding to a valid project_id
     """
     record = await db.get_project(project_id)

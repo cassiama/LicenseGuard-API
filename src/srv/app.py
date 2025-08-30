@@ -11,9 +11,8 @@ from .routers import llm as llm_router, status as status_router
 from .validators import validate_requirements_file
 
 app = FastAPI(lifespan=lifespan)
-# all routes from this router are deprecated as of v0.2.0
-app.include_router(llm_router.router)
-app.include_router(status_router.router)
+app.include_router(llm_router.router)   # all routes from this router are deprecated as of v0.2.0
+app.include_router(status_router.router)    # all routes from this router are deprecated as of v0.3.0
 
 # LLM / OpenAI definitions
 settings = Settings()
@@ -107,6 +106,8 @@ async def get_llm_analysis(
         record.status = Status.COMPLETED
         record.updated_at = datetime.now()
         await db.upsert_project(record)
+        return result
+    
     except Exception as e:  # when the LLM fails...
         try:    # try to update the record with a FAILED status
 
@@ -119,12 +120,13 @@ async def get_llm_analysis(
         finally:
             print(
                 f"[{datetime.now()}] get_llm_analysis failed for {project_id}: {e}")
+            return None
 
 
 @app.post(
     "/analyze",
     response_model=AnalyzeResponse,
-    status_code=status.HTTP_202_ACCEPTED,
+    status_code=status.HTTP_200_OK,
 )
 async def analyze_dependencies(
     file: Annotated[UploadFile, File(
@@ -166,12 +168,18 @@ async def analyze_dependencies(
     )
     await db.upsert_project(record)
 
-    # call the LLM as a background task and let it handle the analysis of the requirements
-    bg_tasks.add_task(get_llm_analysis,
-                      project_id=project_id, project_name=project_name, reqs=_reqs, db=db)
+    # retrieve the analysis from the LLM
+    llm_result = await get_llm_analysis(project_id, project_name, _reqs, db)
+
+    if llm_result is None:
+        return AnalyzeResponse(
+            project_id=project_id,
+            status=Status.FAILED,
+            result=llm_result
+        )
 
     return AnalyzeResponse(
         project_id=project_id,
-        status=Status.IN_PROGRESS,
-        result=None
+        status=Status.COMPLETED,
+        result=llm_result
     )
