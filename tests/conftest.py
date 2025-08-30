@@ -36,10 +36,40 @@ def post_file(client: TestClient):
         return client.post("/analyze", files=files, data=form or {})
     return _post
 
-# helper for setting the OpenAI API key to some fake value
-@pytest.fixture(autouse=True)
-def _set_fake_openai_key(monkeypatch):
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+class FakeLLM:
+    """
+    Minimal LLM double compatible with:
+        structured_llm = llm.with_structured_output(AnalyzeResult)
+        await structured_llm.ainvoke(messages)
+    Captures messages for assertions.
+    """
+    def __init__(self, return_val=None, should_raise: bool = False):
+        self._return = return_val
+        self._raise = should_raise
+        self.calls: list[list] = []  # list of message lists
+
+    def with_structured_output(self, _):
+        return self
+
+    async def ainvoke(self, messages):
+        self.calls.append(messages)
+        if self._raise:
+            raise Exception("LLM invocation failed")
+        # if no explicit return is supplied, return a plain dict so that it can still be validated as AnalyzeResult
+        return self._return or {
+            "project_name": "Test Project",
+            "analysis_date": date.today().isoformat(),
+            "files": [
+                {"name": "requests", "version": "2.32.3",
+                 "license": "Apache-2.0", "confidence_score": 0.8}
+            ],
+        }
+    
+@pytest.fixture
+def fake_llm(monkeypatch):
+    llm = FakeLLM()
+    monkeypatch.setattr("srv.app.llm", llm)
+    return llm
 
 # helper class for seeding the *mock* DB
 # NOTE: once a real DB is implemented, this will change

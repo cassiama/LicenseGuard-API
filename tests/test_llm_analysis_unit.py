@@ -33,37 +33,8 @@ class DBSpy:
         self.records[record.id] = record
 
 
-class FakeLLM:
-    """
-    Minimal LLM double compatible with:
-        structured_llm = llm.with_structured_output(AnalyzeResult)
-        await structured_llm.ainvoke(messages)
-    Captures messages for assertions.
-    """
-    def __init__(self, return_val=None, should_raise: bool = False):
-        self._return = return_val
-        self._raise = should_raise
-        self.calls: list[list] = []  # list of message lists
-
-    def with_structured_output(self, _):
-        return self
-
-    async def ainvoke(self, messages):
-        self.calls.append(messages)
-        if self._raise:
-            raise Exception("LLM invocation failed")
-        # if no explicit return is supplied, return a plain dict so that it can still be validated as AnalyzeResult
-        return self._return or {
-            "project_name": "Test Project",
-            "analysis_date": date.today().isoformat(),
-            "files": [
-                {"name": "requests", "version": "2.32.3",
-                 "license": "Apache-2.0", "confidence_score": 0.8}
-            ],
-        }
-
 @pytest.mark.asyncio
-async def test_get_llm_analysis_success(monkeypatch):
+async def test_get_llm_analysis_success(fake_llm):
     """Persists result and marks COMPLETED when the LLM succeeds."""
     project_id = "b40dcbeabd1d42a3bb4b48b8a2186639"
     project_name = "binder-examples"
@@ -89,8 +60,7 @@ async def test_get_llm_analysis_success(monkeypatch):
                              license="MIT", confidence_score=0.9),
         ],
     )
-    fake = FakeLLM(return_val=result)
-    monkeypatch.setattr("srv.app.llm", fake)
+    fake_llm._return = result
 
     await get_llm_analysis(project_id, project_name, reqs, db)
 
@@ -100,12 +70,11 @@ async def test_get_llm_analysis_success(monkeypatch):
     rec = db.records[project_id]
     assert rec.status == Status.COMPLETED
     assert rec.result == result
-    # function should overwrite record.name with provided project_name
     assert rec.name == project_name
 
 
 @pytest.mark.asyncio
-async def test_get_llm_analysis_creates_record_if_missing(monkeypatch):
+async def test_get_llm_analysis_creates_record_if_missing(fake_llm):
     """If DB has no record, function creates one and completes with result."""
     project_id = "5bf10c5bf28546a587365dc7a5929511"
     project_name = "fastapi"
@@ -119,12 +88,10 @@ async def test_get_llm_analysis_creates_record_if_missing(monkeypatch):
         files=[DependencyReport(name="requests", version="2.32.3",
                                 license="Apache-2.0", confidence_score=0.8)],
     )
-    fake = FakeLLM(return_val=result)
-    monkeypatch.setattr("srv.app.llm", fake)
+    fake_llm._return = result
 
     await get_llm_analysis(project_id, project_name, reqs, db)
 
-    # one upsert performed to persist the new record w/ result
     assert db.upsert_calls == 1
 
     rec = db.records[project_id]
@@ -135,7 +102,7 @@ async def test_get_llm_analysis_creates_record_if_missing(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_get_llm_analysis_marks_failed_on_llm_error(monkeypatch):
+async def test_get_llm_analysis_marks_failed_on_llm_error(fake_llm):
     """On LLM exception, mark FAILED and keep result None."""
     project_id = "713f73a19836401bb73cdf3517f779a7"
     project_name = "abandoned-project"
@@ -151,12 +118,10 @@ async def test_get_llm_analysis_marks_failed_on_llm_error(monkeypatch):
         result=None,
     ))
 
-    fake = FakeLLM(should_raise=True)
-    monkeypatch.setattr("srv.app.llm", fake)
+    fake_llm._raise = True
 
     await get_llm_analysis(project_id, project_name, reqs, db)
 
-    # first get() to load the record, one upsert() to set status as FAILED
     assert db.get_calls >= 1
     assert db.upsert_calls == 1
 
@@ -166,7 +131,7 @@ async def test_get_llm_analysis_marks_failed_on_llm_error(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_llm_messages_contract(monkeypatch):
+async def test_llm_messages_contract(fake_llm):
     """
     The function should send a SystemMessage (with today's date injected) and a HumanMessage containing the project_name and the requirement lines.
     """
@@ -184,20 +149,14 @@ async def test_llm_messages_contract(monkeypatch):
         result=None,
     ))
 
-    fake = FakeLLM()
-    monkeypatch.setattr("srv.app.llm", fake)
-
     await get_llm_analysis(project_id, project_name, reqs, db)
 
-    # exactly one LLM call holding two messages
-    assert len(fake.calls) == 1
-    messages = fake.calls[0]
+    assert len(fake_llm.calls) == 1
+    messages = fake_llm.calls[0]
     assert len(messages) == 2, "expected [SystemMessage, HumanMessage]"
 
-    # for asserting the system message, we know that at least today's ISO date is injected into the template
     assert date.today().isoformat() in messages[0].content
 
-    # for the asserting the human message, we know that it at least includes project name and the packages
     content = messages[1].content
     assert project_name in content
     for line in reqs:
