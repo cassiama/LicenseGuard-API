@@ -8,13 +8,13 @@ def test_check_response_format(post_file):
         b"requests==2.32.3\n",
         "text/plain",
     )
-    assert resp.status_code == 202
+    assert resp.status_code == 200
     body = resp.json()
 
     # check response fields
     assert "project_id" in body and isinstance(body["project_id"], str)
     assert "status" in body and isinstance(body["status"], str)
-    assert "result" in body and body["result"] is None
+    assert "result" in body and body["result"] is not None
 
 
 def test_accepts_valid_requirements_txt_minimal(post_file):
@@ -25,10 +25,36 @@ def test_accepts_valid_requirements_txt_minimal(post_file):
         "text/plain",
         # default project_name
     )
-    assert resp.status_code == 202, resp.text
+    assert resp.status_code == 200, resp.text
     body = resp.json()
     assert HEX32.match(body["project_id"])
-    assert body["status"] == "in_progress"
+    assert body["status"] == "completed"
+    assert "project_name" in body["result"] and isinstance(
+        body["result"]["project_name"], str)
+    assert "analysis_date" in body["result"] and isinstance(
+        body["result"]["analysis_date"], str)
+    assert "files" in body["result"] and isinstance(
+        body["result"]["files"], list)
+    f = body["result"]["files"][0]
+    assert set(f.keys()) >= {"name", "version",
+                             "license", "confidence_score"}
+
+
+def test_llm_failure_handling(post_file, fake_llm):
+    """Tests that the application correctly handles an LLM failure."""
+    fake_llm._raise = True
+
+    resp = post_file(
+        "requirements.txt",
+        b"requests==2.32.3\n",
+        "text/plain",
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
+
+    assert HEX32.match(body["project_id"])
+    assert body["status"] == "failed"
     assert body["result"] is None
 
 
@@ -41,11 +67,19 @@ def test_accepts_valid_requirements_txt_unicode(post_file):
         content,
         "text/plain"
     )
-    assert resp.status_code == 202, resp.text
+    assert resp.status_code == 200, resp.text
     body = resp.json()
     assert HEX32.match(body["project_id"])
-    assert body["status"] == "in_progress"
-    assert body["result"] is None
+    assert body["status"] == "completed"
+    assert "project_name" in body["result"] and isinstance(
+        body["result"]["project_name"], str)
+    assert "analysis_date" in body["result"] and isinstance(
+        body["result"]["analysis_date"], str)
+    assert "files" in body["result"] and isinstance(
+        body["result"]["files"], list)
+    f = body["result"]["files"][0]
+    assert set(f.keys()) >= {"name", "version",
+                             "license", "confidence_score"}
 
 
 def test_accepts_valid_requirements_txt_complex(post_file):
@@ -67,11 +101,19 @@ def test_accepts_valid_requirements_txt_complex(post_file):
         """,
         "text/plain"
     )
-    assert resp.status_code == 202, resp.text
+    assert resp.status_code == 200, resp.text
     body = resp.json()
     assert HEX32.match(body["project_id"])
-    assert body["status"] == "in_progress"
-    assert body["result"] is None
+    assert body["status"] == "completed"
+    assert "project_name" in body["result"] and isinstance(
+        body["result"]["project_name"], str)
+    assert "analysis_date" in body["result"] and isinstance(
+        body["result"]["analysis_date"], str)
+    assert "files" in body["result"] and isinstance(
+        body["result"]["files"], list)
+    f = body["result"]["files"][0]
+    assert set(f.keys()) >= {"name", "version",
+                             "license", "confidence_score"}
 
 
 def test_accepts_valid_with_charset_param_on_content_type(post_file):
@@ -81,11 +123,19 @@ def test_accepts_valid_with_charset_param_on_content_type(post_file):
         "uvicorn[standard]==0.30.0\n".encode("utf-8"),
         "text/plain; charset=utf-8",  # validator splits before ';'
     )
-    assert resp.status_code == 202, resp.text
+    assert resp.status_code == 200, resp.text
     body = resp.json()
     assert HEX32.match(body["project_id"])
-    assert body["status"] == "in_progress"
-    assert body["result"] is None
+    assert body["status"] == "completed"
+    assert "project_name" in body["result"] and isinstance(
+        body["result"]["project_name"], str)
+    assert "analysis_date" in body["result"] and isinstance(
+        body["result"]["analysis_date"], str)
+    assert "files" in body["result"] and isinstance(
+        body["result"]["files"], list)
+    f = body["result"]["files"][0]
+    assert set(f.keys()) >= {"name", "version",
+                             "license", "confidence_score"}
 
 
 def test_accepts_valid__with_project_name_form_field(post_file):
@@ -97,11 +147,19 @@ def test_accepts_valid__with_project_name_form_field(post_file):
         # custom name sent as multipart form field
         form={"project_name": "MyCustomProject"},
     )
-    assert resp.status_code == 202, resp.text
+    assert resp.status_code == 200, resp.text
     body = resp.json()
     assert HEX32.match(body["project_id"])
-    assert body["status"] == "in_progress"
-    assert body["result"] is None
+    assert body["status"] == "completed"
+    assert "project_name" in body["result"] and isinstance(
+        body["result"]["project_name"], str)
+    assert "analysis_date" in body["result"] and isinstance(
+        body["result"]["analysis_date"], str)
+    assert "files" in body["result"] and isinstance(
+        body["result"]["files"], list)
+    f = body["result"]["files"][0]
+    assert set(f.keys()) >= {"name", "version",
+                             "license", "confidence_score"}
 
 
 def test_accepts_file_with_editable_and_named_entries(post_file):
@@ -112,11 +170,19 @@ def test_accepts_file_with_editable_and_named_entries(post_file):
         b"-e .[all]\nfastapi>=0.110\n",
         "text/plain"
     )
-    assert resp.status_code == 202, resp.text
+    assert resp.status_code == 200, resp.text
     body = resp.json()
     assert HEX32.match(body["project_id"])
-    assert body["status"] == "in_progress"
-    assert body["result"] is None
+    assert body["status"] == "completed"
+    assert "project_name" in body["result"] and isinstance(
+        body["result"]["project_name"], str)
+    assert "analysis_date" in body["result"] and isinstance(
+        body["result"]["analysis_date"], str)
+    assert "files" in body["result"] and isinstance(
+        body["result"]["files"], list)
+    f = body["result"]["files"][0]
+    assert set(f.keys()) >= {"name", "version",
+                             "license", "confidence_score"}
 
 
 def test_accepts_file_with_include_and_named_entries(post_file):
@@ -127,11 +193,19 @@ def test_accepts_file_with_include_and_named_entries(post_file):
         b"-r requirements-dev.txt\nrequests==2.32.3\n",
         "text/plain"
     )
-    assert resp.status_code == 202, resp.text
+    assert resp.status_code == 200, resp.text
     body = resp.json()
     assert HEX32.match(body["project_id"])
-    assert body["status"] == "in_progress"
-    assert body["result"] is None
+    assert body["status"] == "completed"
+    assert "project_name" in body["result"] and isinstance(
+        body["result"]["project_name"], str)
+    assert "analysis_date" in body["result"] and isinstance(
+        body["result"]["analysis_date"], str)
+    assert "files" in body["result"] and isinstance(
+        body["result"]["files"], list)
+    f = body["result"]["files"][0]
+    assert set(f.keys()) >= {"name", "version",
+                             "license", "confidence_score"}
 
 
 def test_accepts_pep508_direct_url_line(post_file):
@@ -142,11 +216,19 @@ def test_accepts_pep508_direct_url_line(post_file):
         b"urllib3 @ https://github.com/urllib3/urllib3/archive/refs/tags/1.26.8.zip\n",
         "text/plain"
     )
-    assert resp.status_code == 202, resp.text
+    assert resp.status_code == 200, resp.text
     body = resp.json()
     assert HEX32.match(body["project_id"])
-    assert body["status"] == "in_progress"
-    assert body["result"] is None
+    assert body["status"] == "completed"
+    assert "project_name" in body["result"] and isinstance(
+        body["result"]["project_name"], str)
+    assert "analysis_date" in body["result"] and isinstance(
+        body["result"]["analysis_date"], str)
+    assert "files" in body["result"] and isinstance(
+        body["result"]["files"], list)
+    f = body["result"]["files"][0]
+    assert set(f.keys()) >= {"name", "version",
+                             "license", "confidence_score"}
 
 
 def test_rejects_wrong_media_type_even_if_txt_extension(post_file):
