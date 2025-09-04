@@ -1,27 +1,33 @@
 from typing import Annotated
 from datetime import datetime, date
 from uuid import uuid4
-from fastapi import FastAPI, Form, UploadFile, File, Depends, BackgroundTasks, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import FastAPI, Form, UploadFile, File, Depends, status
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from core.config import Settings
 from db.db import DBClient, get_db, lifespan
-from .schemas import AnalyzeResponse, AnalyzeResult, ProjectRecord, Status
-from .routers import llm as llm_router, status as status_router
+from .schemas import AnalyzeResponse, AnalyzeResult, ProjectRecord, Status, User
+from .routers import llm as llm_router, status as status_router, users as users_router
 from .validators import validate_requirements_file
+from .security import get_current_user
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(llm_router.router)   # all routes from this router are deprecated as of v0.2.0
-app.include_router(status_router.router)    # all routes from this router are deprecated as of v0.3.0
+app.include_router(users_router.router)
+# all routes from this router are deprecated as of v0.2.0
+app.include_router(llm_router.router)
+# all routes from this router are deprecated as of v0.3.0
+app.include_router(status_router.router)
 
-oauth2 = OAuth2PasswordBearer(tokenUrl="token")
 
-# LLM / OpenAI definitions
+app = FastAPI()
+
+
+# importing secrets from the .env file
 settings = Settings()
 if not settings.openai_api_key:
     raise RuntimeError("OPENAI_API_KEY is required to call the LLM.")
 
+# LLM / OpenAI definitions
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0.0,
@@ -110,7 +116,7 @@ async def get_llm_analysis(
         record.updated_at = datetime.now()
         await db.upsert_project(record)
         return result
-    
+
     except Exception as e:  # when the LLM fails...
         try:    # try to update the record with a FAILED status
 
@@ -134,7 +140,7 @@ async def get_llm_analysis(
 async def analyze_dependencies(
     file: Annotated[UploadFile, File(
         description="A requirements.txt file (text/plain).")],
-    _token: Annotated[str, Depends(oauth2)],
+    _user: Annotated[User, Depends(get_current_user)],
     db: DBClient = Depends(get_db),
     project_name: Annotated[str, Form(
         description="The name of the project")] = "untitled",
