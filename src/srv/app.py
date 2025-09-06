@@ -19,9 +19,6 @@ app.include_router(llm_router.router)
 app.include_router(status_router.router)
 
 
-app = FastAPI()
-
-
 # importing secrets from the .env file
 settings = Settings()
 if not settings.openai_api_key:

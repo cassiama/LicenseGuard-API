@@ -12,29 +12,36 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+
 class TokenData(BaseModel):
-    username: Optional[str] = None
+    username: str
+
+
 
 # for users:
 class UserBase(BaseModel):
-    id: str = Field(default_factory=lambda: uuid4().hex,
-                description="Project ID (UUID hex)")
     username: str = Field(min_length=4, max_length=100)
     email: Optional[str] = Field(default=None)
     full_name: Optional[str] = Field(default=None)
 
-class UserCreate(UserBase): # to be used for creating an user in the DB
-    password: str = Field(min_length=4) # TODO: change the min when you're further along in dev
+
+class UserCreate(UserBase):  # to be used for creating an user in the DB
+    # TODO: change the min length when you're further along in dev
+    password: str = Field(min_length=4)
+
 
 class UserInDB(UserBase):   # to be used when the user is stored in the DB
+    id: str = Field(default_factory=lambda: uuid4().hex,
+                    description="User ID (UUID hex)")
     hashed_password: str
 
+
 class User(UserBase):   # to be returned to the client (NOTE: should NEVER include password)
+    id: str
     # this allows the model to be created from ORM objects (like SQLAlchemy)
-    # TODO: uncomment when you verified this works AND when you have added real SQL connections
-    # class Config:
-    #     from_attributes = True
-    pass
+
+    class Config:
+        from_attributes = True
 
 
 # for analysis results:
@@ -91,9 +98,9 @@ class StatusResponse(BaseModel):
                         "analysis_date": str(date.today()),
                         "files": [
                             {"name": "contourpy", "version": "1.3.1",
-                            "license": "BSD-3-Clause", "confidence_score": 0.80},
+                             "license": "BSD-3-Clause", "confidence_score": 0.80},
                             {"name": "contourpy", "version": "1.3.1",
-                            "license": "BSD-3-Clause", "confidence_score": 0.80}
+                             "license": "BSD-3-Clause", "confidence_score": 0.80}
                         ]
                     }
                 },
@@ -127,7 +134,7 @@ class AnalyzeResponse(BaseModel):
             ]
         }
     }
-    
+
 
 # REST response schemas (deprecated)
 class LlmPrompt(BaseModel):
@@ -150,4 +157,3 @@ class ProjectRecord(BaseModel):
     created_at: datetime
     updated_at: datetime
     result: Optional[AnalyzeResult] = None
-
