@@ -40,7 +40,7 @@ class User(UserBase):   # to be returned to the client (NOTE: should NEVER inclu
     id: str
     # this allows the model to be created from ORM objects (like SQLAlchemy)
 
-    class Config:
+    class ConfigDict:
         from_attributes = True
 
 
