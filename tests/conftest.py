@@ -1,6 +1,3 @@
-from srv.schemas import ProjectRecord, Status, AnalysisResult, DependencyReport
-from db.db import get_db
-from srv.app import app
 import io
 import sys
 import re
@@ -11,11 +8,15 @@ from datetime import datetime, date
 from typing import Generator
 from fastapi.testclient import TestClient
 
-# makes sure that "src" importable without setting PYTHONPATH manually
+# makes sure that "src" is importable without setting PYTHONPATH manually
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+
+from srv.schemas import ProjectRecord, Status, AnalysisResult, DependencyReport
+from db.db import get_db
+from srv.app import app
 
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
 
