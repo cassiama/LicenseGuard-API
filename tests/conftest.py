@@ -1,29 +1,38 @@
-import io, sys, re, pytest, asyncio
+import io
+import sys
+import re
+import pytest
+import asyncio
 from pathlib import Path
 from datetime import datetime, date
 from typing import Generator
 from fastapi.testclient import TestClient
 
-# makes sure that "src" importable without setting PYTHONPATH manually
+# makes sure that "src" is importable without setting PYTHONPATH manually
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-# NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
-from srv.app import app
+from srv.schemas import ProjectRecord, Status, AnalysisResult, DependencyReport
 from db.db import get_db
-from srv.schemas import ProjectRecord, Status, AnalyzeResult, DependencyReport
+from srv.app import app
+
+# NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
 
 HEX32 = re.compile(r"^[0-9a-f]{32}$")
 
 # using this context manager will ensure FastAPI lifespan/startup/shutdown all end up running
+
+
 @pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
     with TestClient(app) as c:
         yield c
 
 # helper for POSTing a multipart file
+
+
 @pytest.fixture
 def post_file(client: TestClient):
     def _post(
@@ -36,13 +45,15 @@ def post_file(client: TestClient):
         return client.post("/analyze", files=files, data=form or {})
     return _post
 
+
 class FakeLLM:
     """
     Minimal LLM double compatible with:
-        structured_llm = llm.with_structured_output(AnalyzeResult)
+        structured_llm = llm.with_structured_output(AnalysisResult)
         await structured_llm.ainvoke(messages)
     Captures messages for assertions.
     """
+
     def __init__(self, return_val=None, should_raise: bool = False):
         self._return = return_val
         self._raise = should_raise
@@ -55,7 +66,7 @@ class FakeLLM:
         self.calls.append(messages)
         if self._raise:
             raise Exception("LLM invocation failed")
-        # if no explicit return is supplied, return a plain dict so that it can still be validated as AnalyzeResult
+        # if no explicit return is supplied, return a plain dict so that it can still be validated as AnalysisResult
         return self._return or {
             "project_name": "Test Project",
             "analysis_date": date.today().isoformat(),
@@ -64,7 +75,8 @@ class FakeLLM:
                  "license": "Apache-2.0", "confidence_score": 0.8}
             ],
         }
-    
+
+
 @pytest.fixture
 def fake_llm(monkeypatch):
     llm = FakeLLM()
@@ -73,6 +85,8 @@ def fake_llm(monkeypatch):
 
 # helper class for seeding the *mock* DB
 # NOTE: once a real DB is implemented, this will change
+
+
 class SeededDB:
     """Tiny async mock that satisfies the DBClient protocol for tests."""
 
@@ -95,6 +109,8 @@ class SeededDB:
             rec.updated_at = datetime.now()
 
 # helper function that returns a DB client while also seeding the mock DB
+
+
 @pytest.fixture
 def client_with_seed(client: TestClient):
     test_db = SeededDB()
@@ -115,7 +131,7 @@ def client_with_seed(client: TestClient):
         status=Status.COMPLETED,
         created_at=datetime.now(),
         updated_at=datetime.now(),
-        result=AnalyzeResult(
+        result=AnalysisResult(
             project_name="MyCoolCompleteProject",
             analysis_date=date.today(),
             files=[

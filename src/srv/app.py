@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from core.config import Settings
 from db.db import DBClient, get_db, lifespan
-from .schemas import AnalyzeResponse, AnalyzeResult, ProjectRecord, Status, User
+from .schemas import AnalyzeResponse, AnalysisResult, ProjectRecord, Status, User
 from .routers import llm as llm_router, status as status_router, users as users_router
 from .validators import validate_requirements_file
 from .security import get_current_user
@@ -76,7 +76,7 @@ async def get_llm_analysis(
     """
     try:
         # bind the Pydantic output schema directly to the LLM
-        structured_llm = llm.with_structured_output(AnalyzeResult)
+        structured_llm = llm.with_structured_output(AnalysisResult)
 
         messages = [
             SystemMessage(content=SYSTEM_PROMPT.format(
@@ -92,7 +92,7 @@ async def get_llm_analysis(
             ))
         ]
 
-        result: AnalyzeResult = AnalyzeResult.model_validate(await structured_llm.ainvoke(messages))
+        result: AnalysisResult = AnalysisResult.model_validate(await structured_llm.ainvoke(messages))
 
         # persist the result & status to the DB
         record: ProjectRecord | None = await db.get_project(project_id)

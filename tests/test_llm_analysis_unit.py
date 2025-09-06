@@ -1,12 +1,14 @@
 import pytest
 from datetime import datetime, date
 from srv.app import get_llm_analysis
-from srv.schemas import AnalyzeResult, DependencyReport, ProjectRecord, Status
+from srv.schemas import AnalysisResult, DependencyReport, ProjectRecord, Status
+
 
 class DBSpy:
     """
     Minimal async DB double that behaves like DBClient and lets us assert on effects without AsyncMock. Stores records in-memory and tracks simple counters.
     """
+
     def __init__(self):
         self.records: dict[str, ProjectRecord] = {}
         self.upsert_calls = 0
@@ -50,7 +52,7 @@ async def test_get_llm_analysis_success(fake_llm):
         result=None,
     ))
 
-    result = AnalyzeResult(
+    result = AnalysisResult(
         project_name=project_name,
         analysis_date=date.today(),
         files=[
@@ -82,7 +84,7 @@ async def test_get_llm_analysis_creates_record_if_missing(fake_llm):
 
     db = DBSpy()  # intentionally empty
 
-    result = AnalyzeResult(
+    result = AnalysisResult(
         project_name=project_name,
         analysis_date=date.today(),
         files=[DependencyReport(name="requests", version="2.32.3",

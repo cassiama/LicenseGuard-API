@@ -71,7 +71,7 @@ class DependencyReport(BaseModel):
 
 
 # OpenAI / LLM schemas
-class AnalyzeResult(BaseModel):
+class AnalysisResult(BaseModel):
     """Top-level AI agent output (per-file results)."""
     project_name: str
     analysis_date: date
@@ -83,7 +83,7 @@ class StatusResponse(BaseModel):
     """GET /status/{project_id} response."""
     project_id: str
     status: Status = Field(description="Current status of analysis")
-    result: Optional[AnalyzeResult] = Field(default=None)
+    result: Optional[AnalysisResult] = Field(default=None)
     timestamp: datetime = Field(default_factory=lambda: datetime.now())
 
     # example responses (from tests/conftest.py):
@@ -120,7 +120,7 @@ class AnalyzeResponse(BaseModel):
     """
     project_id: str
     status: Status
-    result: Optional[AnalyzeResult] = None
+    result: Optional[AnalysisResult] = None
 
     # example responses (from tests/conftest.py):
     model_config = {
@@ -156,4 +156,4 @@ class ProjectRecord(BaseModel):
     status: Status
     created_at: datetime
     updated_at: datetime
-    result: Optional[AnalyzeResult] = None
+    result: Optional[AnalysisResult] = None
