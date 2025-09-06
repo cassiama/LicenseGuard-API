@@ -1,20 +1,44 @@
 import os
 from dataclasses import dataclass
-from typing import Optional, Protocol
+from typing import Optional, Protocol, TypedDict, cast
 from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
-from srv.schemas import ProjectRecord, Status
+from srv.schemas import ProjectRecord, Status, UserInDB
+from srv.security import get_hashed_pwd
+
+
+# NOTE: this dictionary is temporary and acts as our dummy database table.
+#       in the real app, this would be a connection to PostgreSQL.
+class UserDict(TypedDict):
+    id: str
+    username: str
+    full_name: str
+    email: str
+    hashed_password: str
+
+
+FAKE_USERS_DB: dict[str, UserDict] = {
+    "johndoe": {
+        "id": "f1c829836f3e446696e3-52d16486ef06",
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": get_hashed_pwd("secret"),
+    }
+}
 
 
 # ----- Basic DB protocol so you can swap real/Mock easily -----
-
+# TODO: change this client to match the new schema per Sanjay's suggestions
 class DBClient(Protocol):
     async def connect(self) -> None: ...
     async def disconnect(self) -> None: ...
     # Examples of operations you might implement:
     async def upsert_project(self, record: ProjectRecord) -> None: ...
-    async def get_project(self, project_id: str) -> Optional[ProjectRecord]: ...
+    async def get_project(
+        self, project_id: str) -> Optional[ProjectRecord]: ...
+
     async def set_status(self, project_id: str, status: Status) -> None: ...
 
 
@@ -28,7 +52,8 @@ class MockDBClient:
         print(f"[{datetime.now()}]: URL to database not provided. Connected to non-persistent database (fallback).")
 
     async def disconnect(self) -> None:
-        print(f"[{datetime.now()}]: Disconnecting from database. All data will be deleted. Goodbye!")
+        print(
+            f"[{datetime.now()}]: Disconnecting from database. All data will be deleted. Goodbye!")
         self._store.clear()
 
     # Example operations (no-ops / in-memory)
@@ -82,6 +107,7 @@ def create_db_client() -> DBClient:
 # app lifespan binding
 _db_client: Optional[DBClient] = None
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db = create_db_client()
@@ -104,3 +130,23 @@ def get_db(request: Request) -> DBClient:
         # raise a server error if the database is not initialized
         raise RuntimeError("DB is not initialized.")
     return db
+
+
+# functions to be used for user authentication:
+def get_user_by_username(username: str) -> Optional[UserInDB]:
+    """
+    Retrieves a single user from the database by their username.
+    """
+    if username in FAKE_USERS_DB:
+        return UserInDB(**FAKE_USERS_DB[username])
+    return None
+
+
+def save_user(user: UserInDB) -> UserInDB:
+    """
+    Saves a user to the database.
+    """
+    # TODO: replace this code once you have a working database connection
+    # we cast this because `model_dump()` returns a generic dict while FAKE_USERS_DB expects a TypedDict/UserDict
+    FAKE_USERS_DB[user.username] = cast(UserDict, user.model_dump())
+    return user

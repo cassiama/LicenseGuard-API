@@ -6,6 +6,45 @@ from typing import Optional
 
 
 # object schemas
+
+# for JWTs:
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str
+
+
+
+# for users:
+class UserBase(BaseModel):
+    username: str = Field(min_length=4, max_length=100)
+    email: Optional[str] = Field(default=None)
+    full_name: Optional[str] = Field(default=None)
+
+
+class UserCreate(UserBase):  # to be used for creating an user in the DB
+    # TODO: change the min length when you're further along in dev
+    password: str = Field(min_length=4)
+
+
+class UserInDB(UserBase):   # to be used when the user is stored in the DB
+    id: str = Field(default_factory=lambda: uuid4().hex,
+                    description="User ID (UUID hex)")
+    hashed_password: str
+
+
+class User(UserBase):   # to be returned to the client (NOTE: should NEVER include password)
+    id: str
+    # this allows the model to be created from ORM objects (like SQLAlchemy)
+
+    class Config:
+        from_attributes = True
+
+
+# for analysis results:
 class Status(str, Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
