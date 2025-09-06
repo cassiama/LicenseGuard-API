@@ -16,23 +16,38 @@ if str(SRC) not in sys.path:
 
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
 from srv.app import app
+from srv.security import get_current_user
+from srv.schemas import EventRecord, EventType, AnalysisResult, DependencyReport, User
 from db.db import get_db
-from srv.schemas import EventRecord, EventType, AnalysisResult, DependencyReport
 
 
 HEX32 = re.compile(r"^[0-9a-f]{32}$")
 
+
+
 # using this context manager will ensure FastAPI lifespan/startup/shutdown all end up running
-
-
 @pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
+    # make sure every test request is logged in as a fake user
+    def _fake_user_dep() -> User:
+        return User(
+            id="test-user-id",
+            username="testuser",
+            full_name="Test User",
+            email="testuser@example.org",
+        )
+    
+    app.dependency_overrides[get_current_user] = _fake_user_dep
+
     with TestClient(app) as c:
         yield c
 
+    # doing this prevents other overrides from having conflicts
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+
 # helper for POSTing a multipart file
-
-
 @pytest.fixture
 def post_file(client: TestClient):
     def _post(
@@ -83,10 +98,10 @@ def fake_llm(monkeypatch):
     monkeypatch.setattr("srv.app.llm", llm)
     return llm
 
+
+
 # helper class for seeding the *mock* DB
 # NOTE: once a real DB is implemented, this will change
-
-
 class SeededDB:
     """Tiny async mock that satisfies the event-logging DBClient protocol."""
 
@@ -105,9 +120,9 @@ class SeededDB:
             if event.user_id == user_id and event.project_name == project_name
         ]
 
+
+
 # helper function that returns a DB client while also seeding the mock DB
-
-
 @pytest.fixture
 def client_with_seed(client: TestClient):
     test_db = SeededDB()
