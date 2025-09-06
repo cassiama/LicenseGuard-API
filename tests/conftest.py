@@ -14,11 +14,11 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from srv.schemas import EventRecord, EventType, AnalysisResult, DependencyReport
-from db.db import get_db
-from srv.app import app
-
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
+from srv.app import app
+from db.db import get_db
+from srv.schemas import EventRecord, EventType, AnalysisResult, DependencyReport
+
 
 HEX32 = re.compile(r"^[0-9a-f]{32}$")
 
@@ -89,13 +89,14 @@ def fake_llm(monkeypatch):
 
 class SeededDB:
     """Tiny async mock that satisfies the event-logging DBClient protocol."""
+
     def __init__(self):
         self.events: list[EventRecord] = []
 
     async def connect(self): ...
     async def disconnect(self): ...
 
-    async def log_event(self, record: EventRecord) -> None:
+    async def upsert_event(self, record: EventRecord) -> None:
         self.events.append(record)
 
     async def get_project_events(self, user_id: str, project_name: str) -> list[EventRecord]:
@@ -147,8 +148,7 @@ def client_with_seed(client: TestClient):
 
     # seed the DB
     for event in seed_events:
-        asyncio.run(test_db.log_event(event))
-
+        asyncio.run(test_db.upsert_event(event))
 
     # override the app dependency to use the seeded mock
     app.dependency_overrides[get_db] = lambda: test_db
