@@ -30,7 +30,7 @@ async def validate_requirements_file(file: UploadFile) -> List[str]:
         )
     try:
         text = raw_text.decode("utf-8")
-    except UnicodeDecodeError as err:
+    except UnicodeDecodeError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Text file is malformed and cannot be decoded."

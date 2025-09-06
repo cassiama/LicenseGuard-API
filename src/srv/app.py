@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from core.config import Settings
 from db.db import DBClient, get_db, lifespan
-from .schemas import AnalyzeResponse, AnalysisResult, ProjectRecord, Status, User
+from .schemas import AnalyzeResponse, AnalysisResult, EventRecord, EventType, Status, User
 from .routers import llm as llm_router, status as status_router, users as users_router
 from .validators import validate_requirements_file
 from .security import get_current_user
@@ -65,10 +65,8 @@ async def root():
 
 # helper function that calls a OpenAI LLM to analyze dependencies and returns a structured output
 async def get_llm_analysis(
-    project_id: str,
     project_name: str,
-    reqs: list[str],
-    db: DBClient
+    reqs: list[str]
 ):
     """
     Runs in a FastAPI BackgroundTask. Calls the LLM via LangChain with structured output
@@ -93,40 +91,12 @@ async def get_llm_analysis(
         ]
 
         result: AnalysisResult = AnalysisResult.model_validate(await structured_llm.ainvoke(messages))
-
-        # persist the result & status to the DB
-        record: ProjectRecord | None = await db.get_project(project_id)
-        if record is None:
-            # if record didn't persist to the DB yet (rare and shouldn't happen, but possible), create a small one to store result
-            record = ProjectRecord(
-                id=project_id,
-                name=project_name,
-                status=Status.IN_PROGRESS,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-                result=None,
-            )
-
-        record.name = project_name
-        record.result = result
-        record.status = Status.COMPLETED
-        record.updated_at = datetime.now()
-        await db.upsert_project(record)
         return result
 
     except Exception as e:  # when the LLM fails...
-        try:    # try to update the record with a FAILED status
-
-            record: ProjectRecord | None = await db.get_project(project_id)
-            if record:
-                record.status = Status.FAILED
-                record.updated_at = datetime.now()
-                await db.upsert_project(record)
-        # regardless of even *that* failing, make sure to log that the LLM failed.
-        finally:
-            print(
-                f"[{datetime.now()}] get_llm_analysis failed for {project_id}: {e}")
-            return None
+        print(
+            f"[{datetime.now()}] get_llm_analysis failed for {project_name}: {e}")
+        return None
 
 
 @app.post(
@@ -137,7 +107,7 @@ async def get_llm_analysis(
 async def analyze_dependencies(
     file: Annotated[UploadFile, File(
         description="A requirements.txt file (text/plain).")],
-    _user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_user)],
     db: DBClient = Depends(get_db),
     project_name: Annotated[str, Form(
         description="The name of the project")] = "untitled",
@@ -165,29 +135,35 @@ async def analyze_dependencies(
     """
     _reqs = await validate_requirements_file(file)  # validate & parse the requirements
 
-    project_id = uuid4().hex
-    record = ProjectRecord(
-        id=project_id,
-        name=project_name,
-        status=Status.IN_PROGRESS,
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-        result=None,
-    )
-    await db.upsert_project(record)
+    # log event (project creation) in the database
+    await file.seek(0)
+    requirements_content: str = (await file.read()).decode("utf-8")
+    await db.log_event(EventRecord(
+        user_id=user.id,
+        project_name=project_name,
+        event=EventType.PROJECT_CREATED,
+        content=requirements_content
+    ))
 
+    # log event (analysis started) in the database
+    await db.log_event(EventRecord(
+        user_id=user.id,
+        project_name=project_name,
+        event=EventType.ANALYSIS_STARTED
+    ))
     # retrieve the analysis from the LLM
-    llm_result = await get_llm_analysis(project_id, project_name, _reqs, db)
+    project_id = uuid4().hex
+    llm_result = await get_llm_analysis(project_name, _reqs)
 
-    if llm_result is None:
-        return AnalyzeResponse(
-            project_id=project_id,
-            status=Status.FAILED,
-            result=llm_result
-        )
-
+    # log event (either analysis completion or failure) in the database
+    await db.log_event(EventRecord(
+        user_id=user.id,
+        project_name=project_name,
+        event=EventType.ANALYSIS_COMPLETED if llm_result else EventType.ANALYSIS_FAILED,
+        content=llm_result
+    ))
     return AnalyzeResponse(
         project_id=project_id,
-        status=Status.COMPLETED,
+        status=Status.COMPLETED if llm_result else Status.FAILED,
         result=llm_result
     )

@@ -2,7 +2,7 @@ from uuid import uuid4
 from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, Union
 
 
 # object schemas
@@ -147,13 +147,20 @@ class LlmResponse(BaseModel):
 
 # internal schemas
 # DB persistence records
-class ProjectRecord(BaseModel):
+class EventType(str, Enum):
+    """Enumeration for the types of events that can be logged."""
+    PROJECT_CREATED = "PROJECT_CREATED"
+    ANALYSIS_STARTED = "ANALYSIS_STARTED"
+    ANALYSIS_COMPLETED = "ANALYSIS_COMPLETED"
+    ANALYSIS_FAILED = "ANALYSIS_FAILED"
+
+class EventRecord(BaseModel):
     """
-    What you'd store in the DB keyed by project_id. Used internally.
+    Represents a single event log in the database.
     """
-    id: str
-    name: str
-    status: Status
-    created_at: datetime
-    updated_at: datetime
-    result: Optional[AnalysisResult] = None
+    user_id: str = Field(description="ID of the user who initiated the event")
+    project_name: str = Field(description="Project name")
+    event: EventType = Field(description="Type of event that occurred")
+    timestamp: datetime = Field(default_factory=datetime.now)
+    # content can be the requirements.txt file (str), the analysis result, or None
+    content: Optional[Union[str, AnalysisResult]] = None
