@@ -34,7 +34,7 @@ class DBClient(Protocol):
     async def connect(self) -> None: ...
     async def disconnect(self) -> None: ...
     # The new primary method is to log an event
-    async def log_event(self, record: EventRecord) -> None: ...
+    async def upsert_event(self, record: EventRecord) -> None: ...
     # A helper to get all events for a project, which can be useful
 
     async def get_project_events(
@@ -56,7 +56,7 @@ class MockDBClient:
             f"[{datetime.now()}]: Disconnecting from database. All data will be deleted.")
         self._store.clear()
 
-    async def log_event(self, record: EventRecord) -> None:
+    async def upsert_event(self, record: EventRecord) -> None:
         """Adds a new event to the in-memory list."""
         print(
             f"[{datetime.now()}]: {record.event} for project {record.project_name}.")
@@ -87,7 +87,7 @@ class RealDBClient:
         # await self._engine.dispose()
         pass
 
-    async def log_event(self, record: EventRecord) -> None:
+    async def upsert_event(self, record: EventRecord) -> None:
         # Implement UPSERT logic
         pass
 

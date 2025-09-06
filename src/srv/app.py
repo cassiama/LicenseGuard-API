@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 from datetime import datetime, date
 from uuid import uuid4
 from fastapi import FastAPI, Form, UploadFile, File, Depends, status
@@ -67,10 +67,9 @@ async def root():
 async def get_llm_analysis(
     project_name: str,
     reqs: list[str]
-):
+) -> Optional[AnalysisResult]:
     """
-    Runs in a FastAPI BackgroundTask. Calls the LLM via LangChain with structured output
-    and persists the result into the DB record. On error, marks FAILED.
+    Runs in a FastAPI BackgroundTask. Calls the LLM via LangChain with structured output. Returns the `AnalysisResult`. On error, returns `None`.
     """
     try:
         # bind the Pydantic output schema directly to the LLM
@@ -93,7 +92,7 @@ async def get_llm_analysis(
         result: AnalysisResult = AnalysisResult.model_validate(await structured_llm.ainvoke(messages))
         return result
 
-    except Exception as e:  # when the LLM fails...
+    except Exception as e:
         print(
             f"[{datetime.now()}] get_llm_analysis failed for {project_name}: {e}")
         return None
@@ -138,7 +137,7 @@ async def analyze_dependencies(
     # log event (project creation) in the database
     await file.seek(0)
     requirements_content: str = (await file.read()).decode("utf-8")
-    await db.log_event(EventRecord(
+    await db.upsert_event(EventRecord(
         user_id=user.id,
         project_name=project_name,
         event=EventType.PROJECT_CREATED,
@@ -146,7 +145,7 @@ async def analyze_dependencies(
     ))
 
     # log event (analysis started) in the database
-    await db.log_event(EventRecord(
+    await db.upsert_event(EventRecord(
         user_id=user.id,
         project_name=project_name,
         event=EventType.ANALYSIS_STARTED
@@ -156,7 +155,7 @@ async def analyze_dependencies(
     llm_result = await get_llm_analysis(project_name, _reqs)
 
     # log event (either analysis completion or failure) in the database
-    await db.log_event(EventRecord(
+    await db.upsert_event(EventRecord(
         user_id=user.id,
         project_name=project_name,
         event=EventType.ANALYSIS_COMPLETED if llm_result else EventType.ANALYSIS_FAILED,
