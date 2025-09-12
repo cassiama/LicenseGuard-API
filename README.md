@@ -17,7 +17,68 @@ The fastest and easiest way to get this running on your machine is to use Docker
 
 ### Requirements
 
+In short:
+
+- have Docker Desktop/Engine installed on your local machine
+- access to a SQL Database
+- the required table(s) in your SQL database
+- have an OpenAI API key
+
+---
+
 Make sure you have Docker Desktop (or Docker Engine) installed on your machine. If you don't, download it from [Docker's website](https://docs.docker.com/get-started/get-docker/).
+
+Our application expects a SQL database connection. It's not picky about which one you prefer, just make sure to create the "Events" table using the following command:
+
+- PostgreSQL (recommended)
+
+```sql
+CREATE TABLE Events (
+    UserID VARCHAR(32) NOT NULL,
+    ProjectName VARCHAR(100) NOT NULL,
+    Event VARCHAR(18) NOT NULL,
+    Timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Content TEXT NULL
+);
+```
+
+- MySQL
+
+```sql
+CREATE TABLE Events (
+    UserID VARCHAR(32) NOT NULL,
+    ProjectName VARCHAR(100) NOT NULL,
+    Event VARCHAR(18) NOT NULL,
+    Timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Content TEXT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+- SQLite
+
+```sql
+CREATE TABLE Events (
+    UserID TEXT NOT NULL,
+    ProjectName TEXT NOT NULL,
+    Event TEXT NOT NULL,
+    Timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Content TEXT
+);
+```
+
+- SQL Server
+
+```sql
+CREATE TABLE Events (
+    UserID NVARCHAR(32) NOT NULL,
+    ProjectName NVARCHAR(100) NOT NULL,
+    Event NVARCHAR(18) NOT NULL,
+    Timestamp DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    Content NVARCHAR(MAX) NULL
+);
+```
+
+If the server fails to start, this will likely be one of the reasons. You *MUST* create these tables for the server to run.
 
 You *WILL* need an OpenAI API key. You can throw it into an environment variable or an `.env` file - whichever you prefer. Just make sure that you call the variable `OPENAI_API_KEY`, otherwise the server will fail to run and you will see errors.
 
