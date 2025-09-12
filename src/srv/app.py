@@ -106,10 +106,10 @@ async def get_llm_analysis(
 async def analyze_dependencies(
     file: Annotated[UploadFile, File(
         description="A requirements.txt file (text/plain).")],
+    project_name: Annotated[str, Form(
+        description="The name of the project")],
     user: Annotated[User, Depends(get_current_user)],
     db: DBClient = Depends(get_db),
-    project_name: Annotated[str, Form(
-        description="The name of the project")] = "untitled",
 ) -> AnalyzeResponse:
     """
     Accepts a requirements.txt file upload and a project name, analyzes each license associated with the dependencies in the 'requirements.txt' file, and returns the analysis.
@@ -130,7 +130,7 @@ async def analyze_dependencies(
 
     file -- an non-empty 'requirements.txt'
 
-    project_name -- the name of your project (default: "untitled")
+    project_name -- the name of your project
     """
     _reqs = await validate_requirements_file(file)  # validate & parse the requirements
 
