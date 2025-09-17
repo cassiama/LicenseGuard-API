@@ -11,7 +11,7 @@ def get_user(username: str) -> Optional[User]:
     # TODO: implement more complex business logic when the app requires it
     user = get_user_by_username(username)
     if user:
-        return User.model_validate(user)
+        return User.model_validate(user, from_attributes=True)
     return None
 
 def authenticate_user(username: str, password: str) -> Optional[User]:
