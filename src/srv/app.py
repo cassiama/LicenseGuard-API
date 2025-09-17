@@ -1,14 +1,14 @@
 from typing import Annotated, Optional
 from datetime import datetime, date
 from uuid import uuid4
-from fastapi import FastAPI, Form, UploadFile, File, Depends, status
+from fastapi import FastAPI, Form, HTTPException, UploadFile, File, Depends, status
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from core.config import Settings
 from db.db import DBClient, get_db, lifespan
 from .schemas import AnalyzeResponse, AnalysisResult, EventRecord, EventType, Status, User
 from .routers import llm as llm_router, status as status_router, users as users_router
-from .validators import validate_requirements_file
+from .validators import parse_requirements_file, validate_requirements_file
 from .security import get_current_user
 
 app = FastAPI(lifespan=lifespan)
@@ -132,16 +132,35 @@ async def analyze_dependencies(
 
     project_name -- the name of your project
     """
-    _reqs = await validate_requirements_file(file)  # validate & parse the requirements
-
     # log event (project creation) in the database
-    await file.seek(0)
     requirements_content: str = (await file.read()).decode("utf-8")
     await db.upsert_event(EventRecord(
         user_id=user.id,
         project_name=project_name,
         event=EventType.PROJECT_CREATED,
         content=requirements_content
+    ))
+
+    await file.seek(0)  # always make sure to reset the file pointer after reading!
+    try:
+        await validate_requirements_file(file)  # validate the file
+    except HTTPException as e:
+        # if the validation failed for any reason, log event (validation failed) in the database
+        await db.upsert_event(EventRecord(
+            user_id=user.id,
+            project_name=project_name,
+            event=EventType.VALIDATION_FAILED,
+        ))
+        raise e
+
+    await file.seek(0)  # always make sure to reset the file pointer after reading!
+    _reqs = await parse_requirements_file(file) # parse requirements from file
+    # log event (validation success) in the database
+    await db.upsert_event(EventRecord(
+        user_id=user.id,
+        project_name=project_name,
+        event=EventType.VALIDATION_SUCCESS,
+        content=_reqs
     ))
 
     # log event (analysis started) in the database
