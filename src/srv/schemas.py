@@ -2,7 +2,7 @@ from uuid import uuid4
 from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import date, datetime
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 
 # object schemas
@@ -164,5 +164,5 @@ class EventRecord(BaseModel):
     project_name: str = Field(description="Project name")
     event: EventType = Field(description="Type of event that occurred")
     timestamp: datetime = Field(default_factory=datetime.now)
-    # content can be the requirements.txt file (str), the analysis result, or None
-    content: Optional[Union[str, AnalysisResult]] = None
+    # content can be the requirements.txt file (str), the requirements themselves, the analysis result, or None
+    content: Optional[Union[str, List[str], AnalysisResult]] = None
