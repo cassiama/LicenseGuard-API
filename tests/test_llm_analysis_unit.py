@@ -6,7 +6,7 @@ from srv.schemas import AnalysisResult, DependencyReport
 
 @pytest.mark.asyncio
 async def test_get_llm_analysis_success(fake_llm):
-    """Test that `get_llm_analysis` returns a successful AnalysisResult."""
+    """Tests that `get_llm_analysis()` returns a successful AnalysisResult."""
     project_name = "binder-examples"
     reqs = ["requests==2.32.3", "fastapi>=0.95.0"]
 
@@ -28,7 +28,7 @@ async def test_get_llm_analysis_success(fake_llm):
 
 @pytest.mark.asyncio
 async def test_get_llm_analysis_handles_exceptions(fake_llm):
-    """Test that `get_llm_analysis` handles exceptions properly."""
+    """Tests that `get_llm_analysis()` handles exceptions properly."""
     project_name = "abandoned-project"
     reqs = ["requests==2.32.3"]
     fake_llm._raise = True
@@ -39,9 +39,7 @@ async def test_get_llm_analysis_handles_exceptions(fake_llm):
 
 @pytest.mark.asyncio
 async def test_llm_messages_contract(fake_llm):
-    """
-    Ensure `get_llm_analysis` sends a SystemMessage and a HumanMessage with expected content.
-    """
+    """Tests that `get_llm_analysis()` sends a SystemMessage and a HumanMessage with expected content."""
     project_name = "Format Test"
     reqs = ["requests==2.32.3", "fastapi>=0.95.0"]
 
