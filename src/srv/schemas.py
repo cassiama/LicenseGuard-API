@@ -17,7 +17,6 @@ class TokenData(BaseModel):
     username: str
 
 
-
 # for users:
 class UserBase(BaseModel):
     username: str = Field(min_length=4, max_length=100)
@@ -79,41 +78,6 @@ class AnalysisResult(BaseModel):
 
 
 # REST response schemas
-class StatusResponse(BaseModel):
-    """GET /status/{project_id} response."""
-    project_id: str
-    status: Status = Field(description="Current status of analysis")
-    result: Optional[AnalysisResult] = Field(default=None)
-    timestamp: datetime = Field(default_factory=lambda: datetime.now())
-
-    # example responses (from tests/conftest.py):
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "id": "776eaf11601c429783d23248b361d2b8",
-                    "status": "completed",
-                    "result": {
-                        "project_name": "MyCoolCompleteProject",
-                        "analysis_date": str(date.today()),
-                        "files": [
-                            {"name": "contourpy", "version": "1.3.1",
-                             "license": "BSD-3-Clause", "confidence_score": 0.80},
-                            {"name": "contourpy", "version": "1.3.1",
-                             "license": "BSD-3-Clause", "confidence_score": 0.80}
-                        ]
-                    }
-                },
-                {
-                    "id": "9c2a06a435814724a8994ec9b48ff4cd",
-                    "status": "failed",
-                    "result": None
-                }
-            ]
-        }
-    }
-
-
 class AnalyzeResponse(BaseModel):
     """
     POST /analyze response. Status will be "IN_PROGRESS" when there's no result yet, or "FAILED"/"COMPLETED" when there's a result.
@@ -136,15 +100,6 @@ class AnalyzeResponse(BaseModel):
     }
 
 
-# REST response schemas (deprecated)
-class LlmPrompt(BaseModel):
-    text: str
-
-
-class LlmResponse(BaseModel):
-    text: str
-
-
 # internal schemas
 # DB persistence records
 class EventType(str, Enum):
@@ -155,6 +110,7 @@ class EventType(str, Enum):
     ANALYSIS_STARTED = "ANALYSIS_STARTED"
     ANALYSIS_COMPLETED = "ANALYSIS_COMPLETED"
     ANALYSIS_FAILED = "ANALYSIS_FAILED"
+
 
 class EventRecord(BaseModel):
     """
