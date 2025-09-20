@@ -61,9 +61,20 @@ async def validate_requirements_file(file: UploadFile) -> bool:
 
 
 async def parse_requirements_file(file: UploadFile) -> List[str]:
-    # decode the raw text file
+    # decode the raw text file (throws an error if the file can't be decoded)
     raw_text: bytes = await file.read()
-    text = raw_text.decode("utf-8")
+    if not raw_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File is empty."
+        )
+    try:
+        text = raw_text.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Text file is malformed and cannot be decoded."
+        )
     
     # skip all directive-like lines that start with '-' (includes -r, -c, -f, etc.)
     text = "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("-"))
