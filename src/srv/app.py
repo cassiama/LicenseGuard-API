@@ -136,6 +136,7 @@ async def analyze_dependencies(
     Throws a 415 if the uploaded file has an unsupported MIME type.
 
     Throws a 422 if:
+     - the project name is less than 1 or greater than 100 characters.
      - the uploaded file does not have a .txt extension.
      - there is a Unicode decode error while processing the file.
      - the requirements.txt file is invalid and cannot be parsed.
@@ -147,6 +148,13 @@ async def analyze_dependencies(
 
     project_name -- the name of your project
     """
+    print(len(project_name))
+    if len(project_name) < 1 or len(project_name) > 100:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Project name must be between 1 and 100 characters."
+        )
+
     # log event (project creation) in the database
     requirements_content: str = (await file.read()).decode("utf-8")
     await db.upsert_event(EventRecord(

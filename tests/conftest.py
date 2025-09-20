@@ -57,7 +57,7 @@ def post_file(client: TestClient):
         form: dict | None = None
     ):
         files = {"file": (filename, io.BytesIO(data), content_type)}
-        return client.post("/analyze", files=files, data=form or {})
+        return client.post("/analyze", files=files, data=form or {"project_name": "untitled"})
     return _post
 
 
