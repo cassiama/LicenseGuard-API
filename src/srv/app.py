@@ -1,5 +1,6 @@
 from typing import Annotated, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timezone
+from email.utils import format_datetime
 from uuid import uuid4
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File, Depends, status
 from langchain_openai import ChatOpenAI
@@ -10,6 +11,11 @@ from .schemas import AnalyzeResponse, AnalysisResult, EventRecord, EventType, St
 from .routers import llm as llm_router, status as status_router, users as users_router
 from .validators import parse_requirements_file, validate_requirements_file
 from .security import get_current_user
+
+# corresponds to commit 11b42e4
+DEPRECATION_DATE = datetime(2025, 8, 21, 22, 23, 6, tzinfo=timezone.utc)
+# corresponds to v0.2.0 release
+SUNSET_DATE = datetime(2025, 8, 30, 23, 59, 59, tzinfo=timezone.utc)
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(users_router.router)
@@ -59,8 +65,17 @@ FEW_SHOT = (
 
 # this route is deprecated as of v0.2.0 (might be reenabled later on, we'll see!)
 @app.get("/", deprecated=True)
-async def root():
-    return {"message": "Hello World!"}
+async def root() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="GET / has been retired. It may return in the future.",
+        headers={
+            # this is an emerging standard. expects either "true" or a HTTP-date timestamp
+            "Deprecation": format_datetime(DEPRECATION_DATE, usegmt=True),
+            # this returns a HTTP-date timestamp, which is expected according to RFC 8594 (source: https://datatracker.ietf.org/doc/html/rfc8594)
+            "Sunset": format_datetime(SUNSET_DATE, usegmt=True)
+        }
+    )
 
 
 # helper function that calls a OpenAI LLM to analyze dependencies and returns a structured output
@@ -141,7 +156,8 @@ async def analyze_dependencies(
         content=requirements_content
     ))
 
-    await file.seek(0)  # always make sure to reset the file pointer after reading!
+    # always make sure to reset the file pointer after reading!
+    await file.seek(0)
     try:
         await validate_requirements_file(file)  # validate the file
     except HTTPException as e:
@@ -153,8 +169,9 @@ async def analyze_dependencies(
         ))
         raise e
 
-    await file.seek(0)  # always make sure to reset the file pointer after reading!
-    _reqs = await parse_requirements_file(file) # parse requirements from file
+    # always make sure to reset the file pointer after reading!
+    await file.seek(0)
+    _reqs = await parse_requirements_file(file)  # parse requirements from file
     # log event (validation success) in the database
     await db.upsert_event(EventRecord(
         user_id=user.id,
