@@ -10,6 +10,9 @@ class Settings(BaseSettings):
         env_file=ROOT / ".env", env_file_encoding='utf-8')
 
     openai_api_key: SecretStr | None = None
+    jwt_secret_key: SecretStr | None = None
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30
 
 
 if __name__ == "__main__":
