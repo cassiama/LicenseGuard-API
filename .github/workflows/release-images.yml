@@ -33,6 +33,7 @@ jobs:
           done
         env:
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
       # Step 2: log into both registries
