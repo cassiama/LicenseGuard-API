@@ -10,6 +10,7 @@ dependencies = [
     "langchain>=0.3.27",
     "langchain-openai>=0.3.30",
     "passlib[bcrypt]>=1.7.4",
+    "bcrypt<4.1",
     "pydantic-settings>=2.10.1",
     "pyjwt>=2.10.1",
     "pytest>=8.4.1",

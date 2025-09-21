@@ -61,22 +61,23 @@ def test_rejects_already_preexisting_username(client):
 def test_rejects_invalid_body(client):
     """Tests that bad request bodies results in a 422 error."""
     r = client.post("/users/", json={"username": "x"})
-    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_rejects_password_too_short(client):
     r = client.post("/users/", json={"username": "johndoe", "password": ""})
-    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "string should have at least 4 characters" in r.text.lower()
 
 
 def test_create_user_rejects_username_too_short(client):
     r = client.post("/users/", json={"username": "jon", "password": "test"})
-    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "string should have at least 4 characters" in r.text.lower()
 
 
 def test_create_user_rejects_username_too_long(client):
-    r = client.post("/users/", json={"username": "a" * 101, "password": "test"})
-    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    r = client.post(
+        "/users/", json={"username": "a" * 101, "password": "test"})
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "string should have at most 100 characters" in r.text.lower()

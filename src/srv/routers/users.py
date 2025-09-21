@@ -33,12 +33,12 @@ def register_user(
     """
     if len(user.username) < 4 or len(user.username) > 100:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Username must be between 4 and 100 characters."
         )
     if len(user.password) < 4:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Password must be at least 4 characters."
         )
 

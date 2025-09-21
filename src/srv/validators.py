@@ -17,10 +17,10 @@ async def validate_requirements_file(file: UploadFile) -> bool:
         )
     if not (file.filename and file.filename.lower().endswith(".txt")):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="File must have .txt extension."
         )
-    
+
     # decode the raw text file (throws an error if the file can't be decoded)
     raw_text: bytes = await file.read()
     if not raw_text:
@@ -32,32 +32,32 @@ async def validate_requirements_file(file: UploadFile) -> bool:
         text = raw_text.decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Text file is malformed and cannot be decoded."
         )
-    
+
     # skip all directive-like lines that start with '-' (includes -r, -c, -f, etc.)
-    # NOTE: we do this because some files that have these *are* valid, but requirements-parser thinks 
+    # NOTE: we do this because some files that have these *are* valid, but requirements-parser thinks
     # they're not. we also do this in the parsing function, but it doesn't need an explanation there!
-    text = "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("-"))
+    text = "\n".join(ln for ln in text.splitlines()
+                     if not ln.lstrip().startswith("-"))
 
     # use requirements-parser to ensure the requirements can be parsed from the file
     try:
         parsed_reqs = list(requirements.parse(text))
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Invalid requirements.txt file."
         )
-    
+
     if not parsed_reqs:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="No requirements found."
         )
-    
-    return True
 
+    return True
 
 
 async def parse_requirements_file(file: UploadFile) -> List[str]:
@@ -72,19 +72,20 @@ async def parse_requirements_file(file: UploadFile) -> List[str]:
         text = raw_text.decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Text file is malformed and cannot be decoded."
         )
-    
+
     # skip all directive-like lines that start with '-' (includes -r, -c, -f, etc.)
-    text = "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("-"))
+    text = "\n".join(ln for ln in text.splitlines()
+                     if not ln.lstrip().startswith("-"))
 
     # next, use requirements-parser to get all of the requirements
     try:
         parsed_reqs = list(requirements.parse(text))
     except ValueError:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Invalid requirements.txt file."
         )
 
@@ -99,7 +100,7 @@ async def parse_requirements_file(file: UploadFile) -> List[str]:
             if ln and not ln.lstrip().startswith("#")]
     if not reqs:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="No requirements found."
         )
 

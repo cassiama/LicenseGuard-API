@@ -151,7 +151,7 @@ async def analyze_dependencies(
     print(len(project_name))
     if len(project_name) < 1 or len(project_name) > 100:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Project name must be between 1 and 100 characters."
         )
 
