@@ -22,7 +22,8 @@ from db.db import get_db
 
 
 HEX32 = re.compile(r"^[0-9a-f]{32}$")
-
+# regex taken from this: https://base64.guru/standards/base64url
+BASE64URL = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 # using this context manager will ensure FastAPI lifespan/startup/shutdown all end up running

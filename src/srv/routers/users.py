@@ -23,14 +23,29 @@ def register_user(
 
     Throws a 400 if there is already a user with the same username in the database.
 
+    Throws a 422 if:
+     - the username is less than 4 or greater than 100 characters.
+     - the password is less than 4 characters.
+
     Keyword arguments:
 
     user -- a `User` object with a username, password, email (optional), and full name (optional)
     """
+    if len(user.username) < 4 or len(user.username) > 100:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Username must be between 4 and 100 characters."
+        )
+    if len(user.password) < 4:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Password must be at least 4 characters."
+        )
+
     db_user = user_crud.get_user(username=user.username)
     if db_user:
         raise HTTPException(
-            status_code=400, detail="A user with this username already registered.")
+            status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this username already registered.")
     return user_crud.create_user(user=user)
 
 

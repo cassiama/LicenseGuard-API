@@ -20,7 +20,7 @@ class UserDict(TypedDict):
 
 FAKE_USERS_DB: dict[str, UserDict] = {
     "johndoe": {
-        "id": "f1c829836f3e446696e3-52d16486ef06",
+        "id": "f1c829836f3e446696e352d16486ef06",
         "username": "johndoe",
         "full_name": "John Doe",
         "email": "johndoe@example.com",

@@ -1,5 +1,5 @@
 import pytest
-from fastapi import HTTPException
+from fastapi import status
 from conftest import HEX32
 
 
@@ -43,7 +43,7 @@ def test_accepts_valid_requirements_txt_minimal(post_file):
 
 
 def test_rejects_non_string_project_name(post_file):
-    """Test that a project name which is not a string results in a 422 error."""
+    """Tests that a project name which is not a string results in a 422 error."""
     invalid_name = dict()  # using a dict (which isn't implicitly casted to a str by FastAPI) instead of a string
     with pytest.raises(TypeError) as ex:
         post_file(
@@ -56,7 +56,7 @@ def test_rejects_non_string_project_name(post_file):
 
 
 def test_rejects_project_name_too_short(post_file):
-    """Test that a project name shorter than 1 character results in a 422 error."""
+    """Tests that a project name shorter than 1 character results in a 422 error."""
     invalid_name = ""  # too short!
     r = post_file(
         "requirements.txt",
@@ -64,12 +64,12 @@ def test_rejects_project_name_too_short(post_file):
         "text/plain",
         form={"project_name": invalid_name},
     )
-    assert r.status_code == 422
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert "project name must be between 1 and 100 characters" in r.text.lower()
 
 
 def test_rejects_project_name_too_long(post_file):
-    """Test that a project name longer than 100 characters results in a 422 error."""
+    """Tests that a project name longer than 100 characters results in a 422 error."""
     invalid_name = "a" * 101  # too long!
     r = post_file(
         "requirements.txt",
@@ -77,7 +77,7 @@ def test_rejects_project_name_too_long(post_file):
         "text/plain",
         form={"project_name": invalid_name},
     )
-    assert r.status_code == 422
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert "project name must be between 1 and 100 characters" in r.text.lower()
 
 
@@ -291,7 +291,7 @@ def test_rejects_wrong_extension_even_if_media_type_ok(post_file):
         b"requests==2.32.3\n",
         "text/plain"
     )
-    assert r.status_code == 422
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert "file must have .txt extension" in r.text.lower()
 
 
@@ -306,7 +306,7 @@ def test_rejects_comments_only(post_file):
     """Tests that a requirements.txt file containing only comments results in a 422 error."""
     content = b"# just a comment\n   \n# another comment"
     r = post_file("requirements.txt", content, "text/plain")
-    assert r.status_code == 422
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert "no requirements found" in r.text.lower()
 
 
@@ -317,7 +317,7 @@ def test_rejects_invalid_requirement_lines_single(post_file):
         b"this is not valid!!!\n",  # a completely invalid line triggers a HTTP 422
         "text/plain"
     )
-    assert r.status_code == 422
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert "invalid requirements.txt file" in r.text.lower()
 
 
@@ -332,7 +332,7 @@ def test_rejects_invalid_requirement_lines_mixed_list(post_file):
         """,    # a mix of valid & invalid lines typically triggers a HTTP 422 from the parser
         "text/plain"
     )
-    assert r.status_code == 422
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert "invalid requirements.txt file" in r.text.lower()
 
 
@@ -340,4 +340,4 @@ def test_missing_file_param_triggers_422_from_fastapi(client):
     """Tests that missing the 'files' field in the request body triggers a 422 error."""
     # if no 'files' field is passed in, then FastAPI's validation layer should automatically throw a HTTP 422
     r = client.post("/analyze")
-    assert r.status_code == 422
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

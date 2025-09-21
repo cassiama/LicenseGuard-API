@@ -38,7 +38,8 @@ def create_access_token(
         expire = datetime.now(timezone.utc) + expires_delta
     # otherwise, use the default (30 minutes)
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
+        expire = datetime.now(
+            timezone.utc) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
     payload.update({"exp": expire})
     try:
         # if the JWT_SECRET_KEY was imported from the .env file, then we need to convert it to a string
@@ -52,15 +53,14 @@ def create_access_token(
                 algorithm=settings.jwt_algorithm
             )
             return access_token
-        
+
         else:
             raise TypeError("Expected a string (or SecretStr) value")
     except TypeError as e:
         raise e
 
+
 # dependency for retrieving the current authenticated user
-
-
 def get_current_user(
         token: Annotated[str, Depends(oauth2)]
 ) -> User:
