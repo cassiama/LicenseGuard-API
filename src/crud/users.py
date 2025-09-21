@@ -47,4 +47,4 @@ def create_user(user: UserCreate) -> User:
     save_user(user_in_db)
 
     # this should return a valid User object WITHOUT the password
-    return User.model_validate(user_in_db)
+    return User.model_validate(user_in_db, from_attributes=True)
