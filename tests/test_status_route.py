@@ -13,5 +13,5 @@ def test_status_410_route_is_gone():
         "Deprecation") == "Sat, 30 Aug 2025 17:43:17 GMT"
     assert "Sunset" in r.headers
     assert r.headers.get("Sunset") is not None and r.headers.get(
-        "Sunset") == "Sat, 20 Sep 2025 23:59:59 GMT"
+        "Sunset") == "Sun, 21 Sep 2025 23:59:59 GMT"
     assert "has been retired" in r.text.lower()

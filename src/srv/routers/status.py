@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Response, status
 # corresponds to commit 9ac8af3
 DEPRECATION_DATE = datetime(2025, 8, 30, 17, 43, 17, tzinfo=timezone.utc)
 # corresponds to v0.3.0 release
-SUNSET_DATE = datetime(2025, 9, 20, 23, 59, 59, tzinfo=timezone.utc)
+SUNSET_DATE = datetime(2025, 9, 21, 23, 59, 59, tzinfo=timezone.utc)
 
 router = APIRouter(prefix="/status", tags=["status"])
 
