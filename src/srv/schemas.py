@@ -30,7 +30,7 @@ class UserCreate(UserBase):  # to be used for creating an user in the DB
 
 
 class UserInDB(UserBase):   # to be used when the user is stored in the DB
-    id: str = Field(default_factory=lambda: uuid4().hex,
+    id: str = Field(default_factory=lambda: str(uuid4()),
                     description="User ID (UUID hex)")
     hashed_password: str
 
@@ -54,7 +54,7 @@ class Project(BaseModel):
     """Represents a single analysis project."""
     model_config = ConfigDict(from_attributes=True)
 
-    id: str = Field(default_factory=lambda: uuid4().hex,
+    id: str = Field(default_factory=lambda: str(uuid4()),
                     description="Project ID (UUID hex)")
     name: str = Field(min_length=1, max_length=100)
 

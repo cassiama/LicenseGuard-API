@@ -21,8 +21,9 @@ from srv.schemas import EventRecord, EventType, AnalysisResult, DependencyReport
 from db.db import get_db
 
 
-HEX32 = re.compile(r"^[0-9a-f]{32}$")
-# regex taken from this: https://base64.guru/standards/base64url
+# regex taken from this source: https://regex101.com/r/wL7uN1/1
+HEX32 = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{12}4[0-9a-f]{19}")
+# regex taken from this source: https://base64.guru/standards/base64url
 BASE64URL = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
@@ -129,7 +130,7 @@ def client_with_seed(client: TestClient):
     test_db = SeededDB()
 
     # seed a sequence of events for a completed project
-    user_id = "9c2a06a435814724a8994ec9b48ff4cd"
+    user_id = "eaa1fa19-390f-4269-af4a-12536d2dab9a"
     project_name = "MyCoolCompleteProject"
     seed_events = [
         EventRecord(
