@@ -29,6 +29,8 @@ app.include_router(status_router.router)
 settings = Settings()
 if not settings.openai_api_key:
     raise RuntimeError("OPENAI_API_KEY is required to call the LLM.")
+if not settings.db_url:
+    raise RuntimeError("DB_URL is required to run the server.")
 
 # LLM / OpenAI definitions
 llm = ChatOpenAI(
