@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, Protocol, TypedDict, cast
 from datetime import datetime
 from contextlib import asynccontextmanager
+from uuid import UUID, uuid4
 from fastapi import FastAPI, Request
 from srv.schemas import EventRecord, EventType, UserInDB
 from srv.security import get_hashed_pwd
@@ -11,7 +12,7 @@ from srv.security import get_hashed_pwd
 # NOTE: this dictionary is temporary and acts as our dummy database table.
 #       in the real app, this would be a connection to PostgreSQL.
 class UserDict(TypedDict):
-    id: str
+    id: UUID
     username: str
     full_name: str
     email: str
@@ -20,7 +21,7 @@ class UserDict(TypedDict):
 
 FAKE_USERS_DB: dict[str, UserDict] = {
     "johndoe": {
-        "id": "f1c829836f3e446696e352d16486ef06",
+        "id": uuid4(),
         "username": "johndoe",
         "full_name": "John Doe",
         "email": "johndoe@example.com",
@@ -38,7 +39,7 @@ class DBClient(Protocol):
     # A helper to get all events for a project, which can be useful
 
     async def get_project_events(
-        self, user_id: str, project_name: str
+        self, user_id: UUID, project_name: str
     ) -> list[EventRecord]: ...
 
 
@@ -63,7 +64,7 @@ class MockDBClient:
         self._store.append(record)
 
     async def get_project_events(
-        self, user_id: str, project_name: str
+        self, user_id: UUID, project_name: str
     ) -> list[EventRecord]:
         """Filters the list to find all events for a specific project and user."""
         return [
@@ -93,11 +94,11 @@ class RealDBClient:
 
     async def get_project_events(
         self,
-        user_id: str,
+        user_id: UUID,
         project_name: str
     ) -> list[EventRecord]:
         # Implement SELECT logic
-        return [EventRecord(user_id="", project_name="", event=EventType.PROJECT_CREATED)]
+        return [EventRecord(user_id=uuid4(), project_name="", event=EventType.PROJECT_CREATED)]
 
 
 # factory for DB clients

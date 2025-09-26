@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from fastapi import FastAPI
 from db.db import (
@@ -13,27 +14,28 @@ async def test_mockdbclient_upsert_and_filter():
     """Tests that MockDBClient stores events and filters by project/user."""
     db = MockDBClient()
     await db.connect()
+    u1_id = uuid.uuid4()
     await db.upsert_event(EventRecord(
-        user_id="u1",
+        user_id=u1_id,
         project_name="p1",
         event=EventType.PROJECT_CREATED
     ))
     await db.upsert_event(EventRecord(
-        user_id="u1",
+        user_id=u1_id,
         project_name="p2",
         event=EventType.PROJECT_CREATED
     ))
-    events = await db.get_project_events("u1", "p1")
+    events = await db.get_project_events(u1_id, "p1")
     assert len(events) == 1
     e1 = events[0]
-    assert e1.user_id == "u1"
+    assert e1.user_id == u1_id and HEX32.match(str(u1_id))
     assert e1.project_name == "p1"
     assert e1.event == EventType.PROJECT_CREATED
     assert e1.content is None
-    events = await db.get_project_events("u1", "p2")
+    events = await db.get_project_events(u1_id, "p2")
     assert len(events) == 1
     e2 = events[0]
-    assert e2.user_id == "u1"
+    assert e2.user_id == u1_id and HEX32.match(str(u1_id))
     assert e2.project_name == "p2"
     assert e2.event == EventType.PROJECT_CREATED
     assert e2.content is None
@@ -74,7 +76,7 @@ def test_get_user_by_username_and_save_user_roundtrip():
     )
     saved = save_user(u)
     assert type(saved) is UserInDB
-    assert HEX32.match(saved.id)
+    assert HEX32.match(str(saved.id))
     assert saved.username == "alice"
     assert saved.hashed_password is not None
     assert get_user_by_username("alice") is not None

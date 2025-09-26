@@ -18,7 +18,7 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
     """
     Given a `username` and `password` associated with a valid user, this will return a `User`. Otherwise, it will return `None`.
     """
-    # get the base user from the db
+    # get the base user from the db (we literally only do this to return the User at the end)
     user = get_user(username)
     if not user:
         return None

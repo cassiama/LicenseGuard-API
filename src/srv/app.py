@@ -197,7 +197,7 @@ async def analyze_dependencies(
         event=EventType.ANALYSIS_STARTED
     ))
     # retrieve the analysis from the LLM
-    project_id = str(uuid4())
+    project_id = uuid4()
     llm_result = await get_llm_analysis(project_name, _reqs)
 
     # log event (either analysis completion or failure) in the database

@@ -1,12 +1,21 @@
+import os
 import io
 import sys
 import re
 import pytest
 import asyncio
+from uuid import uuid4
 from pathlib import Path
 from datetime import date
 from typing import Generator
 from fastapi.testclient import TestClient
+
+
+# will create a safe test default for the DB_URL variable
+# NOTE: this MUST come before we import the app, otherwise the test suite will fail to run
+# NOTE: the test suite will fail to run without this default value
+os.environ.setdefault("DB_URL", "sqlite://")
+
 
 # makes sure that "src" is importable without setting PYTHONPATH manually
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,7 +42,7 @@ def client() -> Generator[TestClient, None, None]:
     # make sure every test request is logged in as a fake user
     def _fake_user_dep() -> User:
         return User(
-            id="test-user-id",
+            id=uuid4(),
             username="testuser",
             full_name="Test User",
             email="testuser@example.org",
@@ -130,7 +139,7 @@ def client_with_seed(client: TestClient):
     test_db = SeededDB()
 
     # seed a sequence of events for a completed project
-    user_id = "eaa1fa19-390f-4269-af4a-12536d2dab9a"
+    user_id = uuid4()
     project_name = "MyCoolCompleteProject"
     seed_events = [
         EventRecord(

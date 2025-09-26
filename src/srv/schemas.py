@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import uuid4, UUID
 from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import date, datetime
@@ -30,13 +30,13 @@ class UserCreate(UserBase):  # to be used for creating an user in the DB
 
 
 class UserInDB(UserBase):   # to be used when the user is stored in the DB
-    id: str = Field(default_factory=lambda: str(uuid4()),
-                    description="User ID (UUID hex)")
+    id: UUID = Field(default_factory=uuid4,
+                     description="User ID (UUID hex)")
     hashed_password: str
 
 
 class User(UserBase):   # to be returned to the client (NOTE: should NEVER include password)
-    id: str
+    id: UUID
     # this allows the model to be created from ORM objects (like SQLAlchemy)
 
     class ConfigDict:
@@ -54,8 +54,8 @@ class Project(BaseModel):
     """Represents a single analysis project."""
     model_config = ConfigDict(from_attributes=True)
 
-    id: str = Field(default_factory=lambda: str(uuid4()),
-                    description="Project ID (UUID hex)")
+    id: UUID = Field(default_factory=uuid4,
+                     description="Project ID (UUID hex)")
     name: str = Field(min_length=1, max_length=100)
 
 
@@ -82,7 +82,7 @@ class AnalyzeResponse(BaseModel):
     """
     POST /analyze response. Status will be "IN_PROGRESS" when there's no result yet, or "FAILED"/"COMPLETED" when there's a result.
     """
-    project_id: str
+    project_id: UUID
     status: Status
     result: Optional[AnalysisResult] = None
 
@@ -91,8 +91,30 @@ class AnalyzeResponse(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "id": "d1216a154352495db55d136982ebe475",
-                    "status": Status.IN_PROGRESS,
+                    "id": "93fe969a-c0fc-4c01-8b92-b866927c552f",
+                    "status": "completed",
+                    "result": {
+                        "analysis_date": "2025-08-30",
+                        "files": [
+                            {
+                                "confidence_score": 0.8,
+                                "license": "BSD-3-Clause",
+                                "name": "contourpy",
+                                "version": "1.3.1"
+                            },
+                            {
+                                "confidence_score": 0.8,
+                                "license": "BSD-3-Clause",
+                                "name": "contourpy",
+                                "version": "1.3.1"
+                            }
+                        ],
+                        "project_name": "MyCoolCompleteProject"
+                    }
+                },
+                {
+                    "id": "8fd82d6c-911d-4932-9d38-02fbadeace22",
+                    "status": "failed",
                     "result": None
                 }
             ]
@@ -116,7 +138,7 @@ class EventRecord(BaseModel):
     """
     Represents a single event log in the database.
     """
-    user_id: str = Field(description="ID of the user who initiated the event")
+    user_id: UUID = Field(description="ID of the user who initiated the event")
     project_name: str = Field(description="Project name")
     event: EventType = Field(description="Type of event that occurred")
     timestamp: datetime = Field(default_factory=datetime.now)

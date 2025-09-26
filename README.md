@@ -103,7 +103,7 @@ For the latest image of the API on Docker Hub, you can access the following rout
 
       ```json
         {
-          "id": "7ec3952b6cc447f8ae99fcba261f6a52",
+          "id": "93fe969a-c0fc-4c01-8b92-b866927c552f",
           "status": "completed",
           "result": {
             "analysis_date": "2025-08-30",
@@ -130,7 +130,7 @@ For the latest image of the API on Docker Hub, you can access the following rout
 
       ```json
       {
-        "id": "8a4365f380b044668e8db8c66a319933",
+        "id": "8fd82d6c-911d-4932-9d38-02fbadeace22",
         "status": "failed",
         "result": null
       }
