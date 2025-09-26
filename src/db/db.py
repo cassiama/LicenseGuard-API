@@ -5,7 +5,7 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from uuid import UUID, uuid4
 from fastapi import FastAPI, Request
-from srv.schemas import EventRecord, EventType, UserInDB
+from srv.schemas import Event, EventType, User
 from srv.security import get_hashed_pwd
 
 
@@ -35,19 +35,19 @@ class DBClient(Protocol):
     async def connect(self) -> None: ...
     async def disconnect(self) -> None: ...
     # The new primary method is to log an event
-    async def upsert_event(self, record: EventRecord) -> None: ...
+    async def upsert_event(self, record: Event) -> None: ...
     # A helper to get all events for a project, which can be useful
 
     async def get_project_events(
         self, user_id: UUID, project_name: str
-    ) -> list[EventRecord]: ...
+    ) -> list[Event]: ...
 
 
 # ----- Mock client (no persistence performed) -----
 
 class MockDBClient:
     def __init__(self) -> None:
-        self._store: list[EventRecord] = []
+        self._store: list[Event] = []
 
     async def connect(self) -> None:
         print(f"[{datetime.now()}]: Connected to non-persistent database (fallback).")
@@ -57,7 +57,7 @@ class MockDBClient:
             f"[{datetime.now()}]: Disconnecting from database. All data will be deleted.")
         self._store.clear()
 
-    async def upsert_event(self, record: EventRecord) -> None:
+    async def upsert_event(self, record: Event) -> None:
         """Adds a new event to the in-memory list."""
         print(
             f"[{datetime.now()}]: {record.event} for project {record.project_name}.")
@@ -65,7 +65,7 @@ class MockDBClient:
 
     async def get_project_events(
         self, user_id: UUID, project_name: str
-    ) -> list[EventRecord]:
+    ) -> list[Event]:
         """Filters the list to find all events for a specific project and user."""
         return [
             event for event in self._store
@@ -88,7 +88,7 @@ class RealDBClient:
         # await self._engine.dispose()
         pass
 
-    async def upsert_event(self, record: EventRecord) -> None:
+    async def upsert_event(self, record: Event) -> None:
         # Implement UPSERT logic
         pass
 
@@ -96,9 +96,9 @@ class RealDBClient:
         self,
         user_id: UUID,
         project_name: str
-    ) -> list[EventRecord]:
+    ) -> list[Event]:
         # Implement SELECT logic
-        return [EventRecord(user_id=uuid4(), project_name="", event=EventType.PROJECT_CREATED)]
+        return [Event(id=uuid4(), user_id=uuid4(), project_name="", event=EventType.PROJECT_CREATED)]
 
 
 # factory for DB clients
@@ -138,16 +138,16 @@ def get_db(request: Request) -> DBClient:
 
 
 # functions to be used for user authentication:
-def get_user_by_username(username: str) -> Optional[UserInDB]:
+def get_user_by_username(username: str) -> Optional[User]:
     """
     Retrieves a single user from the database by their username.
     """
     if username in FAKE_USERS_DB:
-        return UserInDB(**FAKE_USERS_DB[username])
+        return User(**FAKE_USERS_DB[username])
     return None
 
 
-def save_user(user: UserInDB) -> UserInDB:
+def save_user(user: User) -> User:
     """
     Saves a user to the database.
     """

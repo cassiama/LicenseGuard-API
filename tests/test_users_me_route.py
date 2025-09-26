@@ -57,7 +57,7 @@ def test_check_response_format_with_real_token():
 
 
 def test_success_with_real_token():
-    """Tests that the response from "GET /users/me" works with a real token and returns a valid User."""
+    """Tests that the response from "GET /users/me" works with a real token and returns a valid UserPublic."""
     app.dependency_overrides.clear()
     token = create_access_token({"sub": "johndoe"})
     with TestClient(app) as raw_resp:

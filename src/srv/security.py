@@ -7,7 +7,7 @@ from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from pydantic import SecretStr
 from core.config import Settings
-from srv.schemas import TokenData, User
+from srv.schemas import TokenData, UserPublic
 
 
 # import the JWT config variables
@@ -63,7 +63,7 @@ def create_access_token(
 # dependency for retrieving the current authenticated user
 def get_current_user(
         token: Annotated[str, Depends(oauth2)]
-) -> User:
+) -> UserPublic:
     # TODO: after you confirm everything is working, move this import to the top of the file and see what happens/breaks
     # import crud here to avoid a circular dependency
     from crud import users as users_crud

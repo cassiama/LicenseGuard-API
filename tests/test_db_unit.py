@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from db.db import (
     MockDBClient, RealDBClient, create_db_client, lifespan, get_user_by_username, save_user
 )
-from srv.schemas import EventRecord, EventType, UserInDB
+from srv.schemas import Event, EventType, User
 from srv.security import get_hashed_pwd
 from conftest import HEX32
 
@@ -15,12 +15,12 @@ async def test_mockdbclient_upsert_and_filter():
     db = MockDBClient()
     await db.connect()
     u1_id = uuid.uuid4()
-    await db.upsert_event(EventRecord(
+    await db.upsert_event(Event(
         user_id=u1_id,
         project_name="p1",
         event=EventType.PROJECT_CREATED
     ))
-    await db.upsert_event(EventRecord(
+    await db.upsert_event(Event(
         user_id=u1_id,
         project_name="p2",
         event=EventType.PROJECT_CREATED
@@ -70,12 +70,12 @@ async def test_lifespan_binds_and_unbinds_db():
 def test_get_user_by_username_and_save_user_roundtrip():
     """Tests `save_user()` and `get_user_by_username()` work together."""
     assert get_user_by_username("ghost") is None
-    u = UserInDB(
+    u = User(
         username="alice", full_name="", email="",
         hashed_password=get_hashed_pwd("pw"),
     )
     saved = save_user(u)
-    assert type(saved) is UserInDB
+    assert type(saved) is User
     assert HEX32.match(str(saved.id))
     assert saved.username == "alice"
     assert saved.hashed_password is not None

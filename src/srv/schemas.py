@@ -1,8 +1,9 @@
 from uuid import uuid4, UUID
 from enum import Enum
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
 from typing import List, Optional, Union
+from sqlmodel import SQLModel, Field
 
 
 # object schemas
@@ -18,8 +19,8 @@ class TokenData(BaseModel):
 
 
 # for users:
-class UserBase(BaseModel):
-    username: str = Field(min_length=4, max_length=100)
+class UserBase(SQLModel):
+    username: str = Field(min_length=4, max_length=100, index=True)
     email: Optional[str] = Field(default=None)
     full_name: Optional[str] = Field(default=None)
 
@@ -29,13 +30,14 @@ class UserCreate(UserBase):  # to be used for creating an user in the DB
     password: str = Field(min_length=4)
 
 
-class UserInDB(UserBase):   # to be used when the user is stored in the DB
+class User(UserBase, table=True):   # to be used when the user is stored in the DB
     id: UUID = Field(default_factory=uuid4,
-                     description="User ID (UUID hex)")
+                     description="User ID (UUID hex)", primary_key=True)
     hashed_password: str
 
 
-class User(UserBase):   # to be returned to the client (NOTE: should NEVER include password)
+# to be returned to the client (NOTE: should NEVER include password)
+class UserPublic(UserBase):
     id: UUID
     # this allows the model to be created from ORM objects (like SQLAlchemy)
 
@@ -134,13 +136,17 @@ class EventType(str, Enum):
     ANALYSIS_FAILED = "ANALYSIS_FAILED"
 
 
-class EventRecord(BaseModel):
+class Event(SQLModel, table=True):
     """
     Represents a single event log in the database.
     """
-    user_id: UUID = Field(description="ID of the user who initiated the event")
-    project_name: str = Field(description="Project name")
+    id: UUID = Field(default_factory=uuid4,
+                     description="ID of the event", primary_key=True)
+    user_id: UUID = Field(
+        description="ID of the user who initiated the event", foreign_key="user.id")
+    project_name: str = Field(description="Project name", index=True)
     event: EventType = Field(description="Type of event that occurred")
     timestamp: datetime = Field(default_factory=datetime.now)
-    # content can be the requirements.txt file (str), the requirements themselves, the analysis result, or None
-    content: Optional[Union[str, List[str], AnalysisResult]] = None
+    # content can be a string (potential values: the requirements.txt file, the requirements
+    # themselves, or the analysis result), or None
+    content: Optional[str] = None

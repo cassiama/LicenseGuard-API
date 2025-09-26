@@ -24,14 +24,14 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
-from srv.app import app
-from srv.security import get_current_user
-from srv.schemas import EventRecord, EventType, AnalysisResult, DependencyReport, User
 from db.db import get_db
-
+from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, UserPublic
+from srv.security import get_current_user
+from srv.app import app
 
 # regex taken from this source: https://regex101.com/r/wL7uN1/1
-HEX32 = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{12}4[0-9a-f]{19}")
+HEX32 = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{12}4[0-9a-f]{19}")
 # regex taken from this source: https://base64.guru/standards/base64url
 BASE64URL = re.compile(r"^[A-Za-z0-9_-]+$")
 
@@ -40,14 +40,14 @@ BASE64URL = re.compile(r"^[A-Za-z0-9_-]+$")
 @pytest.fixture()
 def client() -> Generator[TestClient, None, None]:
     # make sure every test request is logged in as a fake user
-    def _fake_user_dep() -> User:
-        return User(
+    def _fake_user_dep() -> UserPublic:
+        return UserPublic(
             id=uuid4(),
             username="testuser",
             full_name="Test User",
             email="testuser@example.org",
         )
-    
+
     app.dependency_overrides[get_current_user] = _fake_user_dep
 
     with TestClient(app) as c:
@@ -55,7 +55,6 @@ def client() -> Generator[TestClient, None, None]:
 
     # doing this prevents other overrides from having conflicts
     app.dependency_overrides.pop(get_current_user, None)
-
 
 
 # helper for POSTing a multipart file
@@ -110,27 +109,25 @@ def fake_llm(monkeypatch):
     return llm
 
 
-
 # helper class for seeding the *mock* DB
 # NOTE: once a real DB is implemented, this will change
 class SeededDB:
     """Tiny async mock that satisfies the event-logging DBClient protocol."""
 
     def __init__(self):
-        self.events: list[EventRecord] = []
+        self.events: list[Event] = []
 
     async def connect(self): ...
     async def disconnect(self): ...
 
-    async def upsert_event(self, record: EventRecord) -> None:
+    async def upsert_event(self, record: Event) -> None:
         self.events.append(record)
 
-    async def get_project_events(self, user_id: str, project_name: str) -> list[EventRecord]:
+    async def get_project_events(self, user_id: str, project_name: str) -> list[Event]:
         return [
             event for event in self.events
             if event.user_id == user_id and event.project_name == project_name
         ]
-
 
 
 # helper function that returns a DB client while also seeding the mock DB
@@ -142,18 +139,21 @@ def client_with_seed(client: TestClient):
     user_id = uuid4()
     project_name = "MyCoolCompleteProject"
     seed_events = [
-        EventRecord(
+        Event(
+            id=uuid4(),
             user_id=user_id,
             project_name=project_name,
             event=EventType.PROJECT_CREATED,
             content="requests==2.28.1",
         ),
-        EventRecord(
+        Event(
+            id=uuid4(),
             user_id=user_id,
             project_name=project_name,
             event=EventType.ANALYSIS_STARTED,
         ),
-        EventRecord(
+        Event(
+            id=uuid4(),
             user_id=user_id,
             project_name=project_name,
             event=EventType.ANALYSIS_COMPLETED,
@@ -168,7 +168,7 @@ def client_with_seed(client: TestClient):
                         confidence_score=1.0
                     )
                 ],
-            )
+            ).model_dump_json()
         ),
     ]
 

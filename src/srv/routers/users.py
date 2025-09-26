@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from crud import users as user_crud
-from ..schemas import Token, User, UserCreate
+from ..schemas import Token, UserPublic, UserCreate
 from ..security import create_access_token, get_current_user
 
 router = APIRouter(
@@ -12,12 +12,12 @@ router = APIRouter(
 
 @router.post(
     "/",
-    response_model=User,
+    response_model=UserPublic,
     status_code=status.HTTP_201_CREATED
 )
 def register_user(
     user: UserCreate
-) -> User:
+) -> UserPublic:
     """
     Creates and returns a new user. This new user will be saved into the internal database.
 
@@ -29,7 +29,7 @@ def register_user(
 
     Keyword arguments:
 
-    user -- a `User` object with a username, password, email (optional), and full name (optional)
+    user -- a `UserPublic` object with a username, password, email (optional), and full name (optional)
     """
     if len(user.username) < 4 or len(user.username) > 100:
         raise HTTPException(
@@ -79,16 +79,16 @@ async def get_access_token(
 
 @router.get(
     "/me",
-    response_model=User
+    response_model=UserPublic
 )
 async def read_users_me(
-    current_user: User = Depends(get_current_user)
-) -> User:
+    current_user: UserPublic = Depends(get_current_user)
+) -> UserPublic:
     """
     Returns the current authenticated user's details.
 
     Keyword arguments:
 
-    current_user -- a `User` object with the current user's credentials
+    current_user -- a `UserPublic` object with the current user's credentials
     """
     return current_user

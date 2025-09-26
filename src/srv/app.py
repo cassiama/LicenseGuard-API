@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from core.config import Settings
 from db.db import DBClient, get_db, lifespan
-from .schemas import AnalyzeResponse, AnalysisResult, EventRecord, EventType, Status, User
+from .schemas import AnalyzeResponse, AnalysisResult, Event, EventType, Status, UserPublic
 from .routers import llm as llm_router, status as status_router, users as users_router
 from .validators import parse_requirements_file, validate_requirements_file
 from .security import get_current_user
@@ -125,7 +125,7 @@ async def analyze_dependencies(
         description="A requirements.txt file (text/plain).")],
     project_name: Annotated[str, Form(
         description="The name of the project")],
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[UserPublic, Depends(get_current_user)],
     db: DBClient = Depends(get_db),
 ) -> AnalyzeResponse:
     """
@@ -159,7 +159,7 @@ async def analyze_dependencies(
 
     # log event (project creation) in the database
     requirements_content: str = (await file.read()).decode("utf-8")
-    await db.upsert_event(EventRecord(
+    await db.upsert_event(Event(
         user_id=user.id,
         project_name=project_name,
         event=EventType.PROJECT_CREATED,
@@ -172,7 +172,7 @@ async def analyze_dependencies(
         await validate_requirements_file(file)  # validate the file
     except HTTPException as e:
         # if the validation failed for any reason, log event (validation failed) in the database
-        await db.upsert_event(EventRecord(
+        await db.upsert_event(Event(
             user_id=user.id,
             project_name=project_name,
             event=EventType.VALIDATION_FAILED,
@@ -183,15 +183,15 @@ async def analyze_dependencies(
     await file.seek(0)
     _reqs = await parse_requirements_file(file)  # parse requirements from file
     # log event (validation success) in the database
-    await db.upsert_event(EventRecord(
+    await db.upsert_event(Event(
         user_id=user.id,
         project_name=project_name,
         event=EventType.VALIDATION_SUCCESS,
-        content=_reqs
+        content=", ".join(_reqs)
     ))
 
     # log event (analysis started) in the database
-    await db.upsert_event(EventRecord(
+    await db.upsert_event(Event(
         user_id=user.id,
         project_name=project_name,
         event=EventType.ANALYSIS_STARTED
@@ -201,11 +201,11 @@ async def analyze_dependencies(
     llm_result = await get_llm_analysis(project_name, _reqs)
 
     # log event (either analysis completion or failure) in the database
-    await db.upsert_event(EventRecord(
+    await db.upsert_event(Event(
         user_id=user.id,
         project_name=project_name,
         event=EventType.ANALYSIS_COMPLETED if llm_result else EventType.ANALYSIS_FAILED,
-        content=llm_result
+        content=llm_result.model_dump_json() if llm_result else None
     ))
     return AnalyzeResponse(
         project_id=project_id,
