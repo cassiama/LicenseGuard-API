@@ -30,7 +30,7 @@ def test_accepts_conftest_auto_auth(client):
     assert r.status_code == status.HTTP_200_OK, r.text
     body = r.json()
     # provided by conftest override
-    assert body["id"] == "test-user-id"
+    assert HEX32.match(str(body["id"]))
     assert body["username"] == "testuser"
     assert body["full_name"] == "Test User"
     assert body["email"] == "testuser@example.org"
@@ -57,7 +57,7 @@ def test_check_response_format_with_real_token():
 
 
 def test_success_with_real_token():
-    """Tests that the response from "GET /users/me" works with a real token and returns a valid User."""
+    """Tests that the response from "GET /users/me" works with a real token and returns a valid UserPublic."""
     app.dependency_overrides.clear()
     token = create_access_token({"sub": "johndoe"})
     with TestClient(app) as raw_resp:

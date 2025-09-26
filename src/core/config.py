@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     jwt_secret_key: SecretStr | None = None
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
+    db_url: SecretStr | None = None
 
 
 if __name__ == "__main__":

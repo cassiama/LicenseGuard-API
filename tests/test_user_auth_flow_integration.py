@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from srv.app import app
 
+
 def test_register_login_and_me():
     c = TestClient(app)
 
@@ -13,11 +14,12 @@ def test_register_login_and_me():
         "full_name": "Basic User"
     })
     assert register_resp.status_code == 201, register_resp.text
-    # TODO: assert that the response returned a User
+    # TODO: assert that the response returned a UserPublic
 
     # next, we get a token from /users/token
     # GOAL: verify `create_access_token()` returns a JWT via OAuth2PasswordRequestForm
-    token_resp = c.post("/users/token", data={"username": "basic", "password": "test123"})
+    token_resp = c.post(
+        "/users/token", data={"username": "basic", "password": "test123"})
     assert token_resp.status_code == 200, token_resp.text
     token_json = token_resp.json()
     assert "access_token" in token_json

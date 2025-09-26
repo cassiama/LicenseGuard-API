@@ -4,7 +4,7 @@ from datetime import timedelta
 from fastapi import HTTPException
 from conftest import BASE64URL
 from core.config import Settings
-from srv.schemas import User
+from srv.schemas import UserPublic
 from srv.security import verify_pwd, get_hashed_pwd, create_access_token, get_current_user
 
 settings = Settings()
@@ -34,10 +34,10 @@ def test_produce_jwt_that_can_expire_and_is_decodable():
 
 
 def test_get_valid_user_for_valid_token():
-    """Tests that `get_current_user()` returns a User for a valid token."""
+    """Tests that `get_current_user()` returns a UserPublic for a valid token."""
     token = create_access_token({"sub": "johndoe"})
     user = get_current_user(token)
-    assert type(user) is User
+    assert type(user) is UserPublic
     assert user.username == "johndoe"
 
 
