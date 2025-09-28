@@ -6,12 +6,12 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from pydantic import SecretStr
-from core.config import Settings
+from core.config import get_settings
 from srv.schemas import TokenData, UserPublic
 
 
 # import the JWT config variables
-settings = Settings()
+settings = get_settings()
 
 # setup password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

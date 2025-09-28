@@ -5,8 +5,10 @@ from uuid import uuid4
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File, Depends, status
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
-from core.config import Settings
-from db.db import DBClient, get_db, lifespan
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.config import get_settings
+from crud.events import add_event
+from db.session import get_db
 from .schemas import AnalyzeResponse, AnalysisResult, Event, EventType, Status, UserPublic
 from .routers import llm as llm_router, status as status_router, users as users_router
 from .validators import parse_requirements_file, validate_requirements_file
@@ -17,7 +19,7 @@ DEPRECATION_DATE = datetime(2025, 8, 21, 22, 23, 6, tzinfo=timezone.utc)
 # corresponds to v0.2.0 release
 SUNSET_DATE = datetime(2025, 8, 30, 23, 59, 59, tzinfo=timezone.utc)
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 app.include_router(users_router.router)
 # all routes from this router are deprecated as of v0.2.0
 app.include_router(llm_router.router)
@@ -26,7 +28,7 @@ app.include_router(status_router.router)
 
 
 # importing secrets from the .env file
-settings = Settings()
+settings = get_settings()
 if not settings.openai_api_key:
     raise RuntimeError("OPENAI_API_KEY is required to call the LLM.")
 if not settings.db_url:
@@ -126,7 +128,7 @@ async def analyze_dependencies(
     project_name: Annotated[str, Form(
         description="The name of the project")],
     user: Annotated[UserPublic, Depends(get_current_user)],
-    db: DBClient = Depends(get_db),
+    session: AsyncSession = Depends(get_db),
 ) -> AnalyzeResponse:
     """
     Accepts a requirements.txt file upload and a project name, analyzes each license associated with the dependencies in the 'requirements.txt' file, and returns the analysis.
@@ -150,7 +152,6 @@ async def analyze_dependencies(
 
     project_name -- the name of your project
     """
-    print(len(project_name))
     if len(project_name) < 1 or len(project_name) > 100:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -159,7 +160,9 @@ async def analyze_dependencies(
 
     # log event (project creation) in the database
     requirements_content: str = (await file.read()).decode("utf-8")
-    await db.upsert_event(Event(
+    await add_event(
+        session,
+        Event(
         user_id=user.id,
         project_name=project_name,
         event=EventType.PROJECT_CREATED,
@@ -172,41 +175,53 @@ async def analyze_dependencies(
         await validate_requirements_file(file)  # validate the file
     except HTTPException as e:
         # if the validation failed for any reason, log event (validation failed) in the database
-        await db.upsert_event(Event(
-            user_id=user.id,
-            project_name=project_name,
-            event=EventType.VALIDATION_FAILED,
-        ))
+        await add_event(
+            session,
+            Event(
+                user_id=user.id,
+                project_name=project_name,
+                event=EventType.VALIDATION_FAILED,
+            )
+        )
         raise e
 
     # always make sure to reset the file pointer after reading!
     await file.seek(0)
     _reqs = await parse_requirements_file(file)  # parse requirements from file
     # log event (validation success) in the database
-    await db.upsert_event(Event(
-        user_id=user.id,
-        project_name=project_name,
-        event=EventType.VALIDATION_SUCCESS,
-        content=", ".join(_reqs)
-    ))
+    await add_event(
+        session,
+        Event(
+            user_id=user.id,
+            project_name=project_name,
+            event=EventType.VALIDATION_SUCCESS,
+            content=", ".join(_reqs)
+        )
+    )
 
     # log event (analysis started) in the database
-    await db.upsert_event(Event(
-        user_id=user.id,
-        project_name=project_name,
-        event=EventType.ANALYSIS_STARTED
-    ))
+    await add_event(
+        session,
+        Event(
+            user_id=user.id,
+            project_name=project_name,
+            event=EventType.ANALYSIS_STARTED
+        )
+    )
     # retrieve the analysis from the LLM
     project_id = uuid4()
     llm_result = await get_llm_analysis(project_name, _reqs)
 
     # log event (either analysis completion or failure) in the database
-    await db.upsert_event(Event(
-        user_id=user.id,
-        project_name=project_name,
-        event=EventType.ANALYSIS_COMPLETED if llm_result else EventType.ANALYSIS_FAILED,
-        content=llm_result.model_dump_json() if llm_result else None
-    ))
+    await add_event(
+        session,
+        Event(
+            user_id=user.id,
+            project_name=project_name,
+            event=EventType.ANALYSIS_COMPLETED if llm_result else EventType.ANALYSIS_FAILED,
+            content=llm_result.model_dump_json() if llm_result else None
+        )
+    )
     return AnalyzeResponse(
         project_id=project_id,
         status=Status.COMPLETED if llm_result else Status.FAILED,
