@@ -6,7 +6,7 @@ def test_register_login_and_me():
     c = TestClient(app)
 
     # first, we register a user
-    # GOAL: verify `user_crud.create_user()` works as intended
+    # GOAL: verify `services.users.create_user()` works as intended
     register_resp = c.post("/users/", json={
         "username": "basic",
         "password": "test123",

@@ -1,13 +1,15 @@
+from uuid import uuid4
 import pytest
 import jwt
 from datetime import timedelta
 from fastapi import HTTPException
+from unittest.mock import AsyncMock
 from conftest import BASE64URL
-from core.config import Settings
+from core.config import get_settings
 from srv.schemas import UserPublic
 from srv.security import verify_pwd, get_hashed_pwd, create_access_token, get_current_user
 
-settings = Settings()
+settings = get_settings()
 
 
 def test_password_hash_and_verify():
@@ -33,31 +35,40 @@ def test_produce_jwt_that_can_expire_and_is_decodable():
     assert "exp" in payload
 
 
-def test_get_valid_user_for_valid_token():
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_valid_user_for_valid_token(monkeypatch, session_override):
     """Tests that `get_current_user()` returns a UserPublic for a valid token."""
     token = create_access_token({"sub": "johndoe"})
-    user = get_current_user(token)
+    # in order for the test to pass, we need to mock the user lookup
+    # otherwise, we would have to seed a DB
+    monkeypatch.setattr(
+        "services.users.get_user",
+        AsyncMock(return_value=UserPublic(id=uuid4(), username="johndoe",))
+    )
+    user = await get_current_user(token, session_override)
     assert type(user) is UserPublic
     assert user.username == "johndoe"
 
 
-def test_get_current_user_raises_exception_on_expired_token():
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_current_user_raises_exception_on_expired_token(session_override):
     """Tests that `get_current_user()` raises a 401 error on expired tokens."""
     token = create_access_token(
         {"sub": "johndoe"}, expires_delta=timedelta(seconds=-1))
     with pytest.raises(HTTPException) as ex:
-        get_current_user(token)
+        await get_current_user(token, session_override)
     assert ex.value.status_code == 401
     assert "could not validate user credentials" in str(
         ex.value.detail).lower()
 
 
-def test_get_current_user_raises_exception_on_invalid_user(monkeypatch):
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_current_user_raises_exception_on_invalid_user(monkeypatch, session_override):
     """Tests that `get_current_user()` raises HTTP 401 when the user no longer exists."""
-    monkeypatch.setattr("crud.users.get_user", lambda username: None)
+    monkeypatch.setattr("services.users.get_user", AsyncMock(return_value=None))
     token = create_access_token({"sub": "ghost"})
     with pytest.raises(HTTPException) as ex:
-        get_current_user(token)
+        await get_current_user(token, session_override)
     assert ex.value.status_code == 401
     assert "could not validate user credentials" in str(
         ex.value.detail).lower()

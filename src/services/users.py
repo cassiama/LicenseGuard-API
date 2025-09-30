@@ -1,5 +1,5 @@
 from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 from crud.users import get_user_by_username, save_user
 from srv.schemas import UserPublic, UserCreate, User
 from srv.security import verify_pwd, get_hashed_pwd

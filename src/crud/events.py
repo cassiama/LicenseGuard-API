@@ -1,28 +1,28 @@
 from datetime import datetime
 from uuid import UUID
 from sqlmodel import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 from srv.schemas import Event
 
 
-async def add_event(session: AsyncSession, project_ev: Event) -> None:
+async def add_event(session: AsyncSession, project_evt: Event) -> None:
     """
     Adds a new event to the database.
     """
     print(
-        f"[{datetime.now()}]: {project_ev.event} for project {project_ev.project_name}.")
+        f"[{datetime.now()}]: {project_evt.event} for project {project_evt.project_name}.")
 
-    session.add(project_ev)
+    session.add(project_evt)
     await session.commit()
-    await session.refresh(project_ev)
+    await session.refresh(project_evt)
 
 
 async def get_project_events(session: AsyncSession, user_id: UUID, project_name: str) -> list[Event]:
     """
     Filters the database to find all events for a specific project and user.
     """
-    result = await session.execute(select(Event).where(Event.user_id == user_id and Event.project_name == project_name))
-    rows = result.scalars().all()
+    result = await session.exec(select(Event).where((Event.user_id == user_id) & (Event.project_name == project_name)))
+    rows = result.all()
     events = []
     for r in rows:
         events.append(

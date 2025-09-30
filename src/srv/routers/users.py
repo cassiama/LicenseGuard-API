@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 from db.session import get_db
 from services.users import get_user, create_user, authenticate_user
 from ..schemas import Token, UserPublic, UserCreate
@@ -45,7 +45,7 @@ async def register_user(
             detail="Password must be at least 4 characters."
         )
 
-    db_user = get_user(session, username=user_in.username)
+    db_user = await get_user(session, username=user_in.username)
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this username is already registered.")

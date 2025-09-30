@@ -3,14 +3,16 @@ import io
 import sys
 import re
 import pytest
-import asyncio
+import pytest_asyncio
 from uuid import uuid4
 from pathlib import Path
 from datetime import date
 from typing import AsyncGenerator, Generator, Any
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
+from sqlalchemy import event
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlmodel import SQLModel
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 # for tests that interact with the DB, create a SQLite file per-test session
@@ -30,10 +32,10 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
-from srv.app import app
-from srv.security import get_current_user
-from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
 from db.session import get_db
+from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
+from srv.security import get_current_user
+from srv.app import app
 
 # regex taken from this source: https://regex101.com/r/wL7uN1/1
 HEX32 = re.compile(
@@ -44,7 +46,7 @@ BASE64URL = re.compile(r"^[A-Za-z0-9_-]+$")
 
 # using this context manager will ensure FastAPI lifespan/startup/shutdown all end up running
 @pytest.fixture()
-def client() -> Generator[TestClient, None, None]:
+def client(session_override) -> Generator[TestClient, None, None]:
     # make sure every test request is logged in as a fake user
     def _fake_user_dep() -> UserPublic:
         return UserPublic(
@@ -54,13 +56,21 @@ def client() -> Generator[TestClient, None, None]:
             email="testuser@example.org",
         )
 
+    # make sure all our routes use the same test session
+    async def _override_get_db():
+        try:
+            yield session_override
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = _override_get_db
     app.dependency_overrides[get_current_user] = _fake_user_dep
 
     with TestClient(app) as c:
         yield c
 
     # doing this prevents other overrides from having conflicts
-    app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides.clear()
 
 
 # helper for POSTing a multipart file
@@ -115,15 +125,7 @@ def fake_llm(monkeypatch):
     return llm
 
 
-# create an event loop for the test session
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session")
 async def test_engine() -> AsyncGenerator[Any, Any]:
     # ensure SQLite file from previous runs removed
     try:
@@ -134,92 +136,115 @@ async def test_engine() -> AsyncGenerator[Any, Any]:
     engine = create_async_engine(TEST_DB_URL)
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
-    yield engine
-    await engine.dispose()
+
+    try:
+        yield engine
+    finally:
+        async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.drop_all)
+        await engine.dispose()
+
+    # delete the SQLite file, if possible
     try:
         os.remove(TEST_DB_FILE)
     except OSError:
         pass
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def session_override(test_engine):
-    SessionLocal = async_sessionmaker(test_engine, expire_on_commit=False)
-    async def _get_test_session():
-        async with SessionLocal() as session:
+    # this ensures that there's only 1 connection per test
+    async with test_engine.connect() as conn:
+        # this sets up the outer transaction, which is rolled back at the end of the test
+        outer_txn = await conn.begin()
+
+        # clear any committed leftovers from previous runs
+        for table in reversed(SQLModel.metadata.sorted_tables):
+            await conn.execute(table.delete())
+
+        # binds session to this connection and this one ONLY
+        SessionLocal = async_sessionmaker(
+            bind=conn, expire_on_commit=False, class_=AsyncSession
+        )
+        session: AsyncSession = SessionLocal()
+
+        # starts a SAVEPOINT, which the tests will use when we do a COMMIT
+        await session.begin_nested()
+
+        # below is an note explaining the purpose of this helper function. it was really confusing
+        # at first to wrap my head around it, but i think this gets the gist across. - Chance
+        # NOTE: after a COMMIT (aka when the nested transaction ends), the nested SAVEPOINT
+        # will be released. in order to ensure that all subsequent SQL statements don't
+        # touch the outer transaction, we will need to open a new SAVEPOINT for the currently
+        # open NESTED transaction. this will allow any new SQL statements to be rolled back
+        # without affecting the outer transaction.
+        @event.listens_for(session.sync_session, "after_transaction_end")
+        def _restart_savepoint(sess, txn):
+            # NOTE: `not txn._parent.nested` means the parent of the transaction is the outer one
+            if txn.nested and not txn._parent.nested:
+                sess.begin_nested()
+
+        try:
             yield session
-    
-    app.dependency_overrides[get_db] = _get_test_session
-    yield
+        finally:
+            await session.close()
+            # dump all changes from the test
+            await outer_txn.rollback()
 
 
 # helper function that returns a DB client while also seeding the mock DB
-@pytest.fixture
-def client_with_seed(client: TestClient):
+@pytest_asyncio.fixture
+async def client_with_seed(client: TestClient, session_override: AsyncSession):
+    # seed the test user
+    user_id = uuid4()
+    user = User(
+        id=user_id,
+        username="seeded",
+        full_name="Seeded User",
+        email="seeded@example.com",
+        hashed_password="secret"
+    )
+    session_override.add(user)
+    await session_override.commit()
+    await session_override.refresh(user)
+
     # seed a sequence of events for a completed project
-    async def _seed():
-        get_test_session = app.dependency_overrides[get_db]
-        async with get_test_session() as session:
-            # add the test user
-            user_id = uuid4()
-            username = "johndoe"
-            full_name = "John Doe"
-            email = "johndoe@example.com"
-            password = "secret"
-            user = User(
-                id=user_id,
-                username=username,
-                full_name=full_name,
-                email=email,
-                hashed_password=password
-            )
-            session.add(user)
-            await session.commit()
-            await session.refresh(user)
+    project_name = "MyCoolCompleteProject"
+    seed_events = [
+        Event(
+            id=uuid4(),
+            user_id=user_id,
+            project_name=project_name,
+            event=EventType.PROJECT_CREATED,
+            content="requests==2.28.1",
+        ),
+        Event(
+            id=uuid4(),
+            user_id=user_id,
+            project_name=project_name,
+            event=EventType.ANALYSIS_STARTED,
+        ),
+        Event(
+            id=uuid4(),
+            user_id=user_id,
+            project_name=project_name,
+            event=EventType.ANALYSIS_COMPLETED,
+            content=AnalysisResult(
+                project_name=project_name,
+                analysis_date=date.today(),
+                files=[
+                    DependencyReport(
+                        name="requests",
+                        version="2.28.1",
+                        license="Apache-2.0",
+                        confidence_score=1.0
+                    )
+                ],
+            ).model_dump_json()
+        ),
+    ]
 
-            # add the events
-            project_name = "MyCoolCompleteProject"
-            seed_events = [
-                Event(
-                    id=uuid4(),
-                    user_id=user_id,
-                    project_name=project_name,
-                    event=EventType.PROJECT_CREATED,
-                    content="requests==2.28.1",
-                ),
-                Event(
-                    id=uuid4(),
-                    user_id=user_id,
-                    project_name=project_name,
-                    event=EventType.ANALYSIS_STARTED,
-                ),
-                Event(
-                    id=uuid4(),
-                    user_id=user_id,
-                    project_name=project_name,
-                    event=EventType.ANALYSIS_COMPLETED,
-                    content=AnalysisResult(
-                        project_name=project_name,
-                        analysis_date=date.today(),
-                        files=[
-                            DependencyReport(
-                                name="requests",
-                                version="2.28.1",
-                                license="Apache-2.0",
-                                confidence_score=1.0
-                            )
-                        ],
-                    ).model_dump_json()
-                ),
-            ]
+    session_override.add_all(seed_events)
+    await session_override.commit()
 
-            session.add_all(seed_events)
-            await session.commit()
-
-    # seed the DB
-    asyncio.get_event_loop().run_until_complete(_seed())
-
-    try:
-        yield client    # re-use the existing TestClient, don't create another
-    finally:
-        app.dependency_overrides.clear()
+    yield client    # re-use the existing TestClient, don't create another
