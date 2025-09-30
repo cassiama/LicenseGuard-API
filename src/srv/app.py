@@ -5,7 +5,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File, Depends, status
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel.ext.asyncio.session import AsyncSession
 from core.config import get_settings
 from crud.events import add_event
 from db.session import get_db
