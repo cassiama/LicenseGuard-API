@@ -2,7 +2,7 @@ import uuid
 import pytest
 from conftest import HEX32
 from srv.schemas import Event, EventType
-from services.events import add_event, get_project_events
+from services.events import add_event, list_events
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -25,14 +25,14 @@ async def test_event_add_and_filter(session_override):
             event=EventType.PROJECT_CREATED
         )
     )
-    events = await get_project_events(session_override, u1_id, "p1")
+    events = await list_events(session_override, u1_id, "p1")
     assert len(events) == 1
     e1 = events[0]
     assert e1.user_id == u1_id and HEX32.match(str(u1_id))
     assert e1.project_name == "p1"
     assert e1.event == EventType.PROJECT_CREATED
     assert e1.content is None
-    events = await get_project_events(session_override, u1_id, "p2")
+    events = await list_events(session_override, u1_id, "p2")
     assert len(events) == 1
     e2 = events[0]
     assert e2.user_id == u1_id and HEX32.match(str(u1_id))

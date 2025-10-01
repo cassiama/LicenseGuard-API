@@ -17,7 +17,7 @@ async def upsert_event(session: AsyncSession, logged_evt: Event) -> None:
     await session.refresh(logged_evt)
 
 
-async def get_events_list(session: AsyncSession, user_id: UUID, project_name: str) -> list[Event]:
+async def select_project_events(session: AsyncSession, user_id: UUID, project_name: str) -> list[Event]:
     """
     Filters the database to find all logged events for a specific project and user.
     """
