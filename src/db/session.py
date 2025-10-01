@@ -1,6 +1,7 @@
 from typing import Any, AsyncGenerator, Optional
 from asyncio import sleep
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
+from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.config import get_settings
 
@@ -38,13 +39,12 @@ async def init_engine(db_url: str, max_retries: int = 10, retry_delay: float = 1
     AsyncSessionLocal = async_sessionmaker(
         engine, expire_on_commit=False, class_=AsyncSession)
 
-    # try to acquire a connection to the database in order to verify that's ready to be used
+    # try to acquire a connection to the database in order to create all of the tables
     last_exc = None
     for _ in range(max_retries):
         try:
             async with engine.begin() as conn:
-                # acts as a no-op that verifies the connection
-                await conn.run_sync(lambda _: None)
+                await conn.run_sync(SQLModel.metadata.create_all)
             return
         except Exception as e:
             last_exc = e
