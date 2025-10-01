@@ -29,25 +29,27 @@ In short:
 
 Make sure you have Docker Desktop (or Docker Engine) installed on your machine. If you don't, download it from [Docker's website](https://docs.docker.com/get-started/get-docker/).
 
-Our application expects a SQL database connection. It's not picky about which dialect you prefer, just make sure to create the "event" and "user" tables using the following commands:
+Our application expects a SQL database connection. It's not picky about which dialect you prefer, just make sure to create the `event` and `"user"` tables using the following commands:
 
-#### `event` Table
+#### `"user"` Table
 
-| *Dialect*         | *SQL Statement*                                                                 |
-|------------------|--------------------------------------------------------------------------------|
-| **PostgreSQL (recommended)** | `CREATE TABLE event (id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES "user"(id), project_name VARCHAR(100) NOT NULL, event VARCHAR(32) NOT NULL, "timestamp" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, content TEXT NULL);CREATE INDEX ix_event_project_name ON event (project_name);` |
-| **MySQL** | `CREATE TABLE event (id VARCHAR(36) NOT NULL PRIMARY KEY, user_id VARCHAR(36) NOT NULL, project_name VARCHAR(100) NOT NULL, event VARCHAR(32) NOT NULL, "timestamp" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, content TEXT NULL, CONSTRAINT fk_event_user FOREIGN KEY (user_id) REFERENCES user (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; CREATE INDEX ix_event_project_name ON event (project_name);` |
-| **SQLite** | `CREATE TABLE event (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, project_name TEXT NOT NULL, event TEXT NOT NULL, "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, content TEXT, FOREIGN KEY (user_id) REFERENCES user (id)); CREATE INDEX ix_event_project_name ON event (project_name);` |
-| **SQL Server** | `CREATE TABLE [event] ([id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY, [user_id] UNIQUEIDENTIFIER NOT NULL, [project_name] NVARCHAR(100) NOT NULL, [event] NVARCHAR(32) NOT NULL, [timestamp] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(), [content] NVARCHAR(MAX) NULL, CONSTRAINT [fk_event_user] FOREIGN KEY ([user_id]) REFERENCES [user] ([id])); CREATE INDEX [ix_event_project_name] ON [event] ([project_name]);` |
-
-#### `user` Table
-
-| *Dialect*                      | *SQL Statement*                                                                                                                                                                                                                                                                                                                       |
+| *Dialect* | *SQL Statement* |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **PostgreSQL (recommended)** | `CREATE TABLE "user" (id UUID PRIMARY KEY, username VARCHAR(100) NOT NULL UNIQUE CHECK (char_length(username) >= 4), email VARCHAR(255) NULL UNIQUE, full_name VARCHAR(255) NULL, hashed_password TEXT NOT NULL); CREATE INDEX ix_user_username ON "user" (username);` |
 | **MySQL** | `CREATE TABLE "user" (id CHAR(36) NOT NULL PRIMARY KEY, username VARCHAR(100) NOT NULL UNIQUE, email VARCHAR(255) NULL UNIQUE, full_name VARCHAR(255) NULL, hashed_password TEXT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; CREATE INDEX ix_user_username ON "user" (username);` |
 | **SQLite** | `CREATE TABLE user (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE CHECK (length(username) BETWEEN 4 AND 100), email TEXT NULL UNIQUE, full_name TEXT NULL, hashed_password TEXT NOT NULL); CREATE INDEX ix_user_username ON user (username);` |
 | **SQL Server** | `CREATE TABLE [user] ([id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY, [username] NVARCHAR(100) NOT NULL UNIQUE CHECK (LEN([username]) BETWEEN 4 AND 100), [email] NVARCHAR(255) NULL UNIQUE, [full_name] NVARCHAR(255) NULL, [hashed_password] NVARCHAR(MAX) NOT NULL); CREATE INDEX ix_user_username ON [user] ([username]);` |
+
+> NOTE: You **MUST** name the table `"user"` (user surrounded by double quotes) since `user` is *typically* a reserved table by the SQL database you're using. But there are exceptions (i.e., SQL Server and SQLite). Essentially, make sure to follow the table name you used for the `"user"` table above.
+
+#### `event` Table
+
+| *Dialect* | *SQL Statement* |
+|------------------|--------------------------------------------------------------------------------|
+| **PostgreSQL (recommended)** | `CREATE TABLE event (id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES "user"(id), project_name VARCHAR(100) NOT NULL, event VARCHAR(32) NOT NULL, "timestamp" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, content TEXT NULL); CREATE INDEX ix_event_project_name ON event (project_name);` |
+| **MySQL** | `CREATE TABLE event (id VARCHAR(36) NOT NULL PRIMARY KEY, user_id VARCHAR(36) NOT NULL, project_name VARCHAR(100) NOT NULL, event VARCHAR(32) NOT NULL, "timestamp" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, content TEXT NULL, CONSTRAINT fk_event_user FOREIGN KEY (user_id) REFERENCES user (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; CREATE INDEX ix_event_project_name ON event (project_name);` |
+| **SQLite** | `CREATE TABLE event (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, project_name TEXT NOT NULL, event TEXT NOT NULL, "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, content TEXT, FOREIGN KEY (user_id) REFERENCES user (id)); CREATE INDEX ix_event_project_name ON event (project_name);` |
+| **SQL Server** | `CREATE TABLE [event] ([id] UNIQUEIDENTIFIER NOT NULL PRIMARY KEY, [user_id] UNIQUEIDENTIFIER NOT NULL, [project_name] NVARCHAR(100) NOT NULL, [event] NVARCHAR(32) NOT NULL, [timestamp] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(), [content] NVARCHAR(MAX) NULL, CONSTRAINT [fk_event_user] FOREIGN KEY ([user_id]) REFERENCES [user] ([id])); CREATE INDEX [ix_event_project_name] ON [event] ([project_name]);` |
 
 If the server fails to start, this will likely be one of the reasons. You *MUST* create these tables for the server to run.
 
@@ -55,7 +57,9 @@ If the server fails to start, this will likely be one of the reasons. You *MUST*
 
 You *WILL* need an OpenAI API key. You can throw it into an environment variable or an `.env` file - whichever you prefer. Just make sure that you call the variable `OPENAI_API_KEY`, otherwise the server will fail to run and you will see errors.
 
-You will also need environment variables for generating JSON Web Tokens (`JWT_SECRET_KEY`) and storing the database's URL (`DB_URL`). The former can be generated by running `openssl rand -hex 32` in your terminal.
+You will also need environment variables for generating JSON Web Tokens (`JWT_SECRET_KEY`) and storing the database's URL (`DB_URL`). The former can be generated by running `openssl rand -hex 32` in your terminal. The latter must include the async driver associated with your SQL database (e.g. `postgresql+asyncpg://user:pw@host:5432/dbname`).
+
+> **NOTE:** All of the async drivers for the aforementioned SQL dialects are supported *EXCEPT* `asyncmy`, which is not supported at the moment.
 
 ### Usage
 
