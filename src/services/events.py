@@ -4,11 +4,11 @@ from crud.events import upsert_event, get_events_list
 from srv.schemas import Event
 
 
-async def add_event(session: AsyncSession, project_evt: Event) -> None:
+async def add_event(session: AsyncSession, event: Event) -> None:
     """
     Business logic to add a new event.
     """
-    await upsert_event(session, project_evt)
+    await upsert_event(session, event)
 
 
 async def get_project_events(session: AsyncSession, user_id: UUID, project_name: str) -> list[Event]:
