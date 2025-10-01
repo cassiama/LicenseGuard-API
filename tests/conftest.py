@@ -1,7 +1,3 @@
-from srv.app import app
-from srv.security import get_current_user
-from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
-from db.session import get_session
 import os
 import io
 import sys
@@ -36,6 +32,11 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
+from srv.app import app
+from srv.security import get_current_user
+from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
+from db.session import get_session
+
 
 # regex taken from this source: https://regex101.com/r/wL7uN1/1
 HEX32 = re.compile(
