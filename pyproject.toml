@@ -24,4 +24,5 @@ dependencies = [
     "aioodbc>=0.5.0",
     "pyodbc>=5.2.0",
     "aiomysql>=0.2.0",
+    "asgi-lifespan>=2.1.0",
 ]
