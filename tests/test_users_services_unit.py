@@ -1,6 +1,7 @@
 import pytest
 from uuid import uuid4
 from pydantic import ValidationError
+from conftest import HEX32
 from services.users import authenticate_user, create_user, get_user
 from services.users import get_user_by_username
 from srv.schemas import User, UserPublic, UserCreate
@@ -15,9 +16,10 @@ async def test_get_user_success_when_user_is_present(session_override):
 
     count = (await session_override.exec(select(func.count()).select_from(User))).one()
     print("DB user rows at start of test:", count)
-    
+
     from sqlalchemy import text
-    res = await session_override.exec(text("PRAGMA database_list"))  # if SQLite
+    # if SQLite
+    res = await session_override.exec(text("PRAGMA database_list"))
     print("DB connection id:", id(await session_override.connection()))
     print("DB list:", res.all())
 
@@ -49,10 +51,10 @@ async def test_authenticate_user_success_when_correct_credentials(monkeypatch, s
     """Tests that `authenticate_user()` returns a UserPublic for correct credentials."""
     # NOTE: we say "services.users.verify_pwd" instead of "srv.security.verify_pwd"
     # here because "services.users" IMPORTS `verify_pwd()`, becoming "a part of" its
-    # list of functions that we can call. As for "test_users_services_unit.get_hashed_pwd", 
-    # we're changing the `get_hashed_pwd()` function that we imported into THIS FILE 
+    # list of functions that we can call. As for "test_users_services_unit.get_hashed_pwd",
+    # we're changing the `get_hashed_pwd()` function that we imported into THIS FILE
     # SPECIFICALLY.
-    # To put this simply: if we DON'T do either of these, then it'll call the version of `get_hashed_pwd()` & `verify_pwd()` from the "security" package and NOT our mocked 
+    # To put this simply: if we DON'T do either of these, then it'll call the version of `get_hashed_pwd()` & `verify_pwd()` from the "security" package and NOT our mocked
     # versions!
     # source: https://stackoverflow.com/a/64161240
     monkeypatch.setattr("test_users_services_unit.get_hashed_pwd",
@@ -96,7 +98,7 @@ async def test_create_user_hashes_password_and_persists_users(monkeypatch, sessi
     # NOTE: we say "services.users.get_hashed_pwd" instead of "srv.security.get_hashed_pwd"
     # here because "services.users" IMPORTS `get_hashed_pwd()`, becoming "a part of" its
     # list of functions that we can call.
-    # To put this simply: if we DON'T do this, then it'll call the version of `get_hashed_pwd()` 
+    # To put this simply: if we DON'T do this, then it'll call the version of `get_hashed_pwd()`
     # from the "security" package and NOT our mocked version!
     # source: https://stackoverflow.com/a/64161240
     monkeypatch.setattr("services.users.get_hashed_pwd",
@@ -147,3 +149,41 @@ async def test_create_user_rejects_username_too_long(session_override):
                        full_name="", email="")
         )
     assert "string should have at most 100 characters" in str(ex.value).lower()
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_user_by_username_and_create_user_roundtrip(session_override):
+    """Tests `create_user()` and `get_user()` work together."""
+    # verify that it returns nothing if the user doesn't exist
+    ghost = await get_user(session_override, "ghost")
+    assert ghost is None
+
+    u = UserCreate(
+        username="alice", full_name="Alice in Wonderland", email="alice@example.com",
+        password="secret",
+    )
+    saved = await create_user(session_override, u)
+    # verify that saving the user worked
+    assert saved is not None and isinstance(saved, UserPublic)
+    assert HEX32.match(str(saved.id))
+    assert saved.username == "alice"
+    assert saved.full_name == "Alice in Wonderland"
+    assert saved.email == "alice@example.com"
+
+    # verify that the password wasn't exposed (even though we confirmed above that it should be a
+    # UserPublic model)
+    obj = saved.model_dump_json()
+    assert "password" not in obj
+    assert "hashed_password" not in obj
+
+    # verify that the user has been found and has the same attributes as the one we saved before
+    found = await get_user(session_override, "alice")
+    assert found is not None and isinstance(found, UserPublic)
+    assert found.id == saved.id
+    assert found.username == saved.username
+    assert found.full_name == saved.full_name
+    assert found.email == saved.email
+    # although we confirmed that this is a UserPublic model and it seems to have all of the same attributes, we should still ensure that password is NEVER exposed!
+    obj = found.model_dump_json()
+    assert "password" not in obj
+    assert "hashed_password" not in obj

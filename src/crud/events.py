@@ -5,9 +5,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from srv.schemas import Event
 
 
-async def add_event(session: AsyncSession, project_evt: Event) -> None:
+async def upsert_event(session: AsyncSession, project_evt: Event) -> None:
     """
-    Adds a new event to the database.
+    Upsert a new event into the database.
     """
     print(
         f"[{datetime.now()}]: {project_evt.event} for project {project_evt.project_name}.")
@@ -17,7 +17,7 @@ async def add_event(session: AsyncSession, project_evt: Event) -> None:
     await session.refresh(project_evt)
 
 
-async def get_project_events(session: AsyncSession, user_id: UUID, project_name: str) -> list[Event]:
+async def get_events_list(session: AsyncSession, user_id: UUID, project_name: str) -> list[Event]:
     """
     Filters the database to find all events for a specific project and user.
     """

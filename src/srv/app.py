@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.config import get_settings
-from crud.events import add_event
+from services.events import add_event
 from db.session import get_db
 from .schemas import AnalyzeResponse, AnalysisResult, Event, EventType, Status, UserPublic
 from .routers import llm as llm_router, status as status_router, users as users_router
