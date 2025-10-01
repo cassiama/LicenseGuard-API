@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 from pydantic import SecretStr
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.config import get_settings
-from db.session import get_db
+from db.session import get_session
 from srv.schemas import TokenData, UserPublic
 
 
@@ -65,7 +65,7 @@ def create_access_token(
 # dependency for retrieving the current authenticated user
 async def get_current_user(
     token: Annotated[str, Depends(oauth2)],
-    session: Annotated[AsyncSession, Depends(get_db)]
+    session: Annotated[AsyncSession, Depends(get_session)]
 ) -> UserPublic:
     # import services here to avoid a circular dependency
     from services import users as users_service
@@ -102,6 +102,7 @@ async def get_current_user(
 
     user = await users_service.get_user(session, username=token_data.username)
     if user is None:
-        print(f"Couldn't find a user with the username '{token_data.username}'.")
+        print(
+            f"Couldn't find a user with the username '{token_data.username}'.")
         raise credentials_exception
     return user

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel.ext.asyncio.session import AsyncSession
-from db.session import get_db
+from db.session import get_session
 from services.users import get_user, create_user, authenticate_user
 from ..schemas import Token, UserPublic, UserCreate
 from ..security import create_access_token, get_current_user
@@ -19,7 +19,7 @@ router = APIRouter(
 )
 async def register_user(
     user_in: UserCreate,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_session)
 ) -> UserPublic:
     """
     Creates and returns a new user. This new user will be saved into the internal database.
@@ -59,7 +59,7 @@ async def register_user(
 )
 async def get_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_session)
 ):
     """
     Takes in the `username` and `password` from the OAuth2 form data. Logs the user in and returns an access token (JWT).

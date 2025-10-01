@@ -1,3 +1,7 @@
+from srv.app import app
+from srv.security import get_current_user
+from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
+from db.session import get_session
 import os
 import io
 import sys
@@ -32,10 +36,6 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
-from db.session import get_db
-from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
-from srv.security import get_current_user
-from srv.app import app
 
 # regex taken from this source: https://regex101.com/r/wL7uN1/1
 HEX32 = re.compile(
@@ -57,13 +57,13 @@ def client(session_override) -> Generator[TestClient, None, None]:
         )
 
     # make sure all our routes use the same test session
-    async def _override_get_db():
+    async def _override_get_session():
         try:
             yield session_override
         finally:
             pass
 
-    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_session] = _override_get_session
     app.dependency_overrides[get_current_user] = _fake_user_dep
 
     with TestClient(app) as c:
