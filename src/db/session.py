@@ -8,7 +8,6 @@ ALLOWED_CONN_PREFIXES = [
     "postgresql+asyncpg://",
     "sqlite+aiosqlite://",
     "mysql+aiomysql://",
-    "mysql+asyncmy://",
     "mssql+aioodbc://",
 ]
 
@@ -22,7 +21,6 @@ if not any([DB_URL.startswith(conn_prefix) for conn_prefix in ALLOWED_CONN_PREFI
 # create the engine and local session
 engine = create_async_engine(
     DB_URL,
-    echo=True,
     pool_pre_ping=True
 )
 AsyncSessionLocal = async_sessionmaker(

@@ -2,8 +2,9 @@ from uuid import uuid4, UUID
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
-from typing import List, Optional, Union
-from sqlmodel import SQLModel, Field
+from typing import Optional
+from sqlalchemy import Enum as SAEnum
+from sqlmodel import SQLModel, Field, Column
 
 
 # object schemas
@@ -145,7 +146,9 @@ class Event(SQLModel, table=True):
     user_id: UUID = Field(
         description="ID of the user who initiated the event", foreign_key="user.id")
     project_name: str = Field(description="Project name", index=True)
-    event: EventType = Field(description="Type of event that occurred")
+    event: EventType = Field(
+        sa_column=Column(SAEnum(EventType, native_enum=False), nullable=False),
+        description="Type of event that occurred")
     timestamp: datetime = Field(default_factory=datetime.now)
     # content can be a string (potential values: the requirements.txt file, the requirements
     # themselves, or the analysis result), or None
