@@ -58,10 +58,24 @@ docker pull licenseguard/license-guard:api-latest
 
 #### Running the Docker Image
 
-**With `.env` file:**
+1. **Set up your database server**. You can use Docker, SQLite, or whatever else you prefer.
+
+2. **Run migrations on the database** by running the following command (depending on your preference on environment variables):
+
+- **With `.env` file:**
+`docker run -p 80:80 --env-file .env licenseguard/license-guard:api-latest migrate`
+
+- **With an environment variable:**
+`docker run --rm -p 80:80 -e OPENAI_API_KEY=YOUR_ACTUAL_API_KEY -e JWT_SECRET_KEY=$(openssl rand -hex 32) -e DB_URL=YOUR_ACTUAL_DB_URL licenseguard/license-guard:api-latest migrate`
+
+> **NOTE:** This is ***required*** for deploying the Docker image in production environments. Also, you ensure that your server can communicate with your database. Otherwise, you might have errors!
+
+3. **Run the server** by running the following command (depending on your preference on environment variables):
+
+- **With `.env` file:**
 Run the Docker image by running `docker run -p 80:80 --env-file .env licenseguard/license-guard:api-latest` in the terminal.
 
-**With an environment variable:**
+- **With an environment variable:**
 Run the Docker image by running `docker run -p 80:80 -e OPENAI_API_KEY=YOUR_ACTUAL_API_KEY -e JWT_SECRET_KEY=$(openssl rand -hex 32) -e DB_URL=YOUR_ACTUAL_DB_URL licenseguard/license-guard:api-latest` in the terminal.
 
 > NOTE: This command runs the server in **production** mode, not dev mode.
