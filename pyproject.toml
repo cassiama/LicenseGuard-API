@@ -25,4 +25,5 @@ dependencies = [
     "pyodbc>=5.2.0",
     "aiomysql>=0.2.0",
     "asgi-lifespan>=2.1.0",
+    "alembic>=1.16.5",
 ]

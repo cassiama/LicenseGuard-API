@@ -13,17 +13,29 @@ COPY --from=ghcr.io/astral-sh/uv@sha256:cda9608307dbbfc1769f3b6b1f9abf5f1360de0b
 # Set the working dir before copying project metadata.
 WORKDIR /api
 
+# Create non-root user & group (system account, no shell).
+RUN set -eux; \
+    groupadd -r app && useradd -r -g app -d /api -s /usr/sbin/nologin app; \
+    chown -R app:app /api
+
 # Copy the project metadata first to leverage build cache.
 COPY pyproject.toml uv.lock ./
 
 # Install the application dependencies.
 RUN uv sync --frozen --no-cache
 
-# Copy the rest of the application code.
-COPY . .
+# Copy the app source code and the Alembic files.
+COPY --chown=app:app src/ /app/src/
+COPY --chown=app:app alembic.ini /app/
+COPY --chown=app:app migrations/ /app/migrations/
+
+# Copy the entrypoint script to the PATH and make it executable.
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Use the project venv binaries on the PATH.
 ENV PATH="/api/.venv/bin:${PATH}"
 
-# Run the application.
-CMD ["/api/.venv/bin/fastapi", "run", "src/srv/app.py", "--port", "80", "--host", "0.0.0.0"]
+# Set the entrypoint and default command. By default, run the application.
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["serve"]
