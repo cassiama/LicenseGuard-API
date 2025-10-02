@@ -36,6 +36,9 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Use the project venv binaries on the PATH.
 ENV PATH="/api/.venv/bin:${PATH}"
 
+# Set the user to be the non-root user we created (following best practices from here: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html).
+USER app:app
+
 # Set the entrypoint and default command. By default, run the application.
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["serve"]
