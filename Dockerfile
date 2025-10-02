@@ -25,9 +25,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-cache
 
 # Copy the app source code and the Alembic files.
-COPY --chown=app:app src/ /app/src/
-COPY --chown=app:app alembic.ini /app/
-COPY --chown=app:app migrations/ /app/migrations/
+COPY --chown=app:app src/ /api/src/
+COPY --chown=app:app alembic.ini /api/
+COPY --chown=app:app migrations/ /api/migrations/
 
 # Copy the entrypoint script to the PATH and make it executable.
 COPY docker-entrypoint.sh /usr/local/bin/
