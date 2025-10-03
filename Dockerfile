@@ -18,6 +18,9 @@ RUN set -eux; \
     groupadd -r app && useradd -r -g app -d /api -s /usr/sbin/nologin app; \
     chown -R app:app /api
 
+# Give the user permissions for, potentially, a "/api/data" directory.
+RUN install -d -o app -g app -m 0770 /api/data
+
 # Copy the project metadata first to leverage build cache.
 COPY pyproject.toml uv.lock ./
 

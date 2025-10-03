@@ -78,7 +78,7 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         # make autogen emit batch blocks on SQLite
-        render_as_batch=getattr(connection.dialect, "name", "") == "sqlite",
+        render_as_batch=connection.dialect.name == "sqlite",
         compare_type=True,
         compare_server_default=True,
     )

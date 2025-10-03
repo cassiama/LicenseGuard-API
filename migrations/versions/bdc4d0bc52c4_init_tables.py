@@ -22,31 +22,30 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.create_table(
         "user",
-        sa.Column("id", sa.UUID),
-        sa.Column("username", sa.VARCHAR(100)),
+        sa.Column("id", sa.VARCHAR(36), primary_key=True, nullable=False),
+        sa.Column("username", sa.VARCHAR(100), unique=True, index=True, nullable=False),
         sa.Column("email", sa.TEXT, nullable=True),
         sa.Column("full_name", sa.TEXT, nullable=True),
-        sa.Column("hashed_password", sa.TEXT)
+        sa.Column("hashed_password", sa.TEXT, nullable=False)
     )
-    op.create_primary_key("pk_user", "user", ["id"])
-    op.create_index("ix_user_username", "user", ["username"])
+
     op.create_table(
         "event",
-        sa.Column("id", sa.UUID),
-        sa.Column("user_id", sa.UUID),
-        sa.Column("project_name", sa.TEXT),
-        sa.Column("event", sa.VARCHAR(18)),
-        sa.Column("timestamp", sa.TIMESTAMP),
+        sa.Column("id", sa.VARCHAR(36), primary_key=True),
+        sa.Column("user_id", sa.VARCHAR(36), sa.ForeignKey("user.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("project_name", sa.TEXT, index=True, nullable=False),
+        sa.Column("event", sa.VARCHAR(18), nullable=False),
+        sa.Column("timestamp", sa.TIMESTAMP, nullable=False),
         sa.Column("content", sa.TEXT, nullable=True)
     )
-    op.create_foreign_key("fk_event_user_id_user", "event", "user", ["user_id"], ["id"])
-    op.create_index("ix_event_project_name", "event", ["project_name"])
+    with op.batch_alter_table("event", schema=None) as batch_op:
+        batch_op.create_foreign_key("fk_event_user_id_user", "user", ["user_id"], ["id"])
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_constraint("pk_user", "user", "primary")
+    with op.batch_alter_table("event", schema=None) as batch_op:
+        batch_op.drop_constraint("fk_event_user_id_user", type_="foreignkey")
     op.drop_index("ix_user_username", "user")
     op.drop_table("user")
-    op.drop_constraint("fk_event_user_id_user", "event", "foreignkey")
     op.drop_index("ix_event_project_name", "event")
     op.drop_table("event")
