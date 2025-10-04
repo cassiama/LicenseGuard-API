@@ -1,7 +1,7 @@
 from uuid import uuid4, UUID
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import SQLModel, Field, Column
@@ -145,11 +145,13 @@ class Event(SQLModel, table=True):
                      description="ID of the event", primary_key=True)
     user_id: UUID = Field(
         description="ID of the user who initiated the event", foreign_key="user.id")
-    project_name: str = Field(description="Project name", index=True)
+    project_name: str = Field(
+        min_length=1, max_length=100, description="Project name", index=True)
     event: EventType = Field(
         sa_column=Column(SAEnum(EventType, native_enum=False), nullable=False),
         description="Type of event that occurred")
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc))
     # content can be a string (potential values: the requirements.txt file, the requirements
     # themselves, or the analysis result), or None
     content: Optional[str] = None

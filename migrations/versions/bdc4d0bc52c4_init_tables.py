@@ -33,13 +33,48 @@ def upgrade() -> None:
         "event",
         sa.Column("id", sa.VARCHAR(36), primary_key=True),
         sa.Column("user_id", sa.VARCHAR(36), sa.ForeignKey("user.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("project_name", sa.TEXT, index=True, nullable=False),
+        sa.Column("project_name", sa.VARCHAR(100), index=True, nullable=False),
         sa.Column("event", sa.VARCHAR(18), nullable=False),
-        sa.Column("timestamp", sa.TIMESTAMP, nullable=False),
+        sa.Column("timestamp", sa.DATETIME(timezone=True), nullable=False),
         sa.Column("content", sa.TEXT, nullable=True)
     )
-    with op.batch_alter_table("event", schema=None) as batch_op:
-        batch_op.create_foreign_key("fk_event_user_id_user", "user", ["user_id"], ["id"])
+
+    conn = op.get_bind()
+    dialect = conn.dialect.name
+
+    fk_name = "fk_event_user_id_user"
+
+    exists = False
+    if dialect == "mssql":
+        # SQL Server: sys.foreign_keys
+        res = conn.execute(sa.text(
+            "SELECT COUNT(*) FROM sys.foreign_keys WHERE name = :name"
+        ), {"name": fk_name})
+        exists = res.scalar() is not None
+    elif dialect == "postgresql":
+        res = conn.execute(sa.text(
+            "SELECT COUNT(*) FROM information_schema.table_constraints "
+            "WHERE constraint_name = :name AND constraint_type='FOREIGN KEY'"
+        ), {"name": fk_name})
+        exists = res.scalar() is not None
+    elif dialect == "mysql":
+        res = conn.execute(sa.text(
+            "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS "
+            "WHERE CONSTRAINT_NAME = :name AND CONSTRAINT_SCHEMA = DATABASE()"
+        ), {"name": fk_name})
+        exists = res.scalar() is not None
+    elif dialect == "sqlite":
+        # SQLite: check pragma
+        res = conn.execute(sa.text("PRAGMA foreign_key_list('event')"))
+        exists = any(row[2] == 'user' and row[3] == 'user_id' for row in res.fetchall())
+
+    if not exists:
+        with op.batch_alter_table("event", schema=None) as batch_op:
+            batch_op.create_foreign_key(
+                fk_name, "user", ["user_id"], ["id"], ondelete="CASCADE"
+            )
+
+        # batch_op.create_foreign_key("fk_event_user_id_user", "user", ["user_id"], ["id"])
 
 def downgrade() -> None:
     """Downgrade schema."""

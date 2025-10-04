@@ -7,6 +7,18 @@ LABEL org.opencontainers.image.source="https://github.com/cassiama/LicenseGuard-
       org.opencontainers.image.description="LicenseGuard API server"
 # TODO: add licensing info, once you have decided on a license!
 
+# minimal ODBC runtime for pyodbc/aioodbc (Debian/Ubuntu base)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates curl gnupg2 unixodbc \
+  && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+       | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
+  && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] \
+       https://packages.microsoft.com/debian/12/prod bookworm main" \
+       > /etc/apt/sources.list.d/microsoft-prod.list \
+  && apt-get update \
+  && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 \
+  && rm -rf /var/lib/apt/lists/*
+
 # Install uv.
 COPY --from=ghcr.io/astral-sh/uv@sha256:cda9608307dbbfc1769f3b6b1f9abf5f1360de0be720f544d29a7ae2863c47ef /uv /uvx /bin/
 
