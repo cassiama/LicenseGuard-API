@@ -1,0 +1,66 @@
+name: CI (tests only)
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'feature-*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env: 
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+        DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/testdb
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for Postgres to be ready
+        run: |
+          for i in $(seq 1 30); do
+            pg_isready -h localhost -p 5432 -U postgres && break
+            if (( i % 5  == 0 )); then
+              printf "Waiting for postgres... (after %2d seconds)" "$i"
+            fi
+            sleep 1
+          done
+
+      - uses: actions/checkout@v4
+
+      - name: Check required secrets
+        run: |
+          for v in OPENAI_API_KEY; do
+            if [ -z "${!v}" ]; then
+              echo "❌ Missing $v (not delivered to this run)."
+              exit 1
+            fi
+          done
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      # Fast Python setup with uv
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install
+      - run: uv venv && uv sync --all-extras --dev
+
+      - name: Run tests
+        run: uv run pytest -q

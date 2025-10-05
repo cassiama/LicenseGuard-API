@@ -1,6 +1,6 @@
 [project]
 name = "LicenseGuard-API"
-version = "0.3.0"
+version = "0.3.1"
 description = "Automatically determines licenses for your packages in requirements.txt"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -18,4 +18,13 @@ dependencies = [
     "python-multipart>=0.0.20",
     "requirements-parser>=0.13.0",
     "starlette>=0.47.2",
+    "sqlmodel>=0.0.25",
+    "asyncpg>=0.30.0",
+    "aiosqlite>=0.21.0",
+    "aioodbc>=0.5.0",
+    "pyodbc>=5.2.0",
+    "aiomysql>=0.2.0",
+    "asgi-lifespan>=2.1.0",
+    "alembic>=1.16.5",
+    "cryptography>=46.0.2",
 ]

@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from crud import users as user_crud
-from ..schemas import Token, User, UserCreate
+from sqlmodel.ext.asyncio.session import AsyncSession
+from db.session import get_session
+from services.users import get_user, create_user, authenticate_user
+from ..schemas import Token, UserPublic, UserCreate
 from ..security import create_access_token, get_current_user
 
 router = APIRouter(
@@ -12,12 +14,13 @@ router = APIRouter(
 
 @router.post(
     "/",
-    response_model=User,
+    response_model=UserPublic,
     status_code=status.HTTP_201_CREATED
 )
-def register_user(
-    user: UserCreate
-) -> User:
+async def register_user(
+    user_in: UserCreate,
+    session: AsyncSession = Depends(get_session)
+) -> UserPublic:
     """
     Creates and returns a new user. This new user will be saved into the internal database.
 
@@ -29,24 +32,25 @@ def register_user(
 
     Keyword arguments:
 
-    user -- a `User` object with a username, password, email (optional), and full name (optional)
+    user_in -- a `UserCreate` object with a username, password, email (optional), and full name (optional)
     """
-    if len(user.username) < 4 or len(user.username) > 100:
+    if len(user_in.username) < 4 or len(user_in.username) > 100:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Username must be between 4 and 100 characters."
         )
-    if len(user.password) < 4:
+    if len(user_in.password) < 4:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Password must be at least 4 characters."
         )
 
-    db_user = user_crud.get_user(username=user.username)
+    db_user = await get_user(session, username=user_in.username)
     if db_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this username already registered.")
-    return user_crud.create_user(user=user)
+            status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this username is already registered.")
+    user = await create_user(session, user=user_in)
+    return user
 
 
 @router.post(
@@ -54,7 +58,8 @@ def register_user(
     response_model=Token
 )
 async def get_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends()
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: AsyncSession = Depends(get_session)
 ):
     """
     Takes in the `username` and `password` from the OAuth2 form data. Logs the user in and returns an access token (JWT).
@@ -65,7 +70,7 @@ async def get_access_token(
 
     form_data -- a form that takes the `username` and `password` as inputs
     """
-    user = user_crud.authenticate_user(form_data.username, form_data.password)
+    user = await authenticate_user(session, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -79,16 +84,16 @@ async def get_access_token(
 
 @router.get(
     "/me",
-    response_model=User
+    response_model=UserPublic
 )
 async def read_users_me(
-    current_user: User = Depends(get_current_user)
-) -> User:
+    current_user: UserPublic = Depends(get_current_user)
+) -> UserPublic:
     """
     Returns the current authenticated user's details.
 
     Keyword arguments:
 
-    current_user -- a `User` object with the current user's credentials
+    current_user -- a `UserPublic` object with the current user's credentials
     """
     return current_user

@@ -6,12 +6,14 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from pydantic import SecretStr
-from core.config import Settings
-from srv.schemas import TokenData, User
+from sqlmodel.ext.asyncio.session import AsyncSession
+from core.config import get_settings
+from db.session import get_session
+from srv.schemas import TokenData, UserPublic
 
 
 # import the JWT config variables
-settings = Settings()
+settings = get_settings()
 
 # setup password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -61,12 +63,12 @@ def create_access_token(
 
 
 # dependency for retrieving the current authenticated user
-def get_current_user(
-        token: Annotated[str, Depends(oauth2)]
-) -> User:
-    # TODO: after you confirm everything is working, move this import to the top of the file and see what happens/breaks
-    # import crud here to avoid a circular dependency
-    from crud import users as users_crud
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2)],
+    session: Annotated[AsyncSession, Depends(get_session)]
+) -> UserPublic:
+    # import services here to avoid a circular dependency
+    from services import users as users_service
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -87,6 +89,7 @@ def get_current_user(
             )
             username: str = payload.get("sub")
             if username is None:
+                print("Couldn't find the username provided in the JWT!")
                 raise credentials_exception
             token_data = TokenData(username=username)
         else:
@@ -94,9 +97,12 @@ def get_current_user(
     except TypeError as e:
         raise e
     except InvalidTokenError:
+        print("Couldn't verify the JWT.")
         raise credentials_exception
 
-    user = users_crud.get_user(username=token_data.username)
+    user = await users_service.get_user(session, username=token_data.username)
     if user is None:
+        print(
+            f"Couldn't find a user with the username '{token_data.username}'.")
         raise credentials_exception
     return user

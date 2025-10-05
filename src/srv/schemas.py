@@ -1,8 +1,10 @@
 from uuid import uuid4
 from enum import Enum
-from pydantic import BaseModel, Field, ConfigDict
-from datetime import date, datetime
-from typing import List, Optional, Union
+from pydantic import BaseModel, ConfigDict
+from datetime import date, datetime, timezone
+from typing import Optional
+from sqlalchemy import Enum as SAEnum
+from sqlmodel import DateTime, SQLModel, Field, Column
 
 
 # object schemas
@@ -18,8 +20,8 @@ class TokenData(BaseModel):
 
 
 # for users:
-class UserBase(BaseModel):
-    username: str = Field(min_length=4, max_length=100)
+class UserBase(SQLModel):
+    username: str = Field(min_length=4, max_length=100, index=True)
     email: Optional[str] = Field(default=None)
     full_name: Optional[str] = Field(default=None)
 
@@ -29,13 +31,14 @@ class UserCreate(UserBase):  # to be used for creating an user in the DB
     password: str = Field(min_length=4)
 
 
-class UserInDB(UserBase):   # to be used when the user is stored in the DB
-    id: str = Field(default_factory=lambda: uuid4().hex,
-                    description="User ID (UUID hex)")
+class User(UserBase, table=True):   # to be used when the user is stored in the DB
+    id: str = Field(default_factory=lambda: str(uuid4()),
+                     description="User ID (str hex)", primary_key=True)
     hashed_password: str
 
 
-class User(UserBase):   # to be returned to the client (NOTE: should NEVER include password)
+# to be returned to the client (NOTE: should NEVER include password)
+class UserPublic(UserBase):
     id: str
     # this allows the model to be created from ORM objects (like SQLAlchemy)
 
@@ -54,8 +57,8 @@ class Project(BaseModel):
     """Represents a single analysis project."""
     model_config = ConfigDict(from_attributes=True)
 
-    id: str = Field(default_factory=lambda: uuid4().hex,
-                    description="Project ID (UUID hex)")
+    id: str = Field(default_factory=lambda: str(uuid4()),
+                     description="Project ID (str hex)")
     name: str = Field(min_length=1, max_length=100)
 
 
@@ -91,8 +94,30 @@ class AnalyzeResponse(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "id": "d1216a154352495db55d136982ebe475",
-                    "status": Status.IN_PROGRESS,
+                    "id": "93fe969a-c0fc-4c01-8b92-b866927c552f",
+                    "status": "completed",
+                    "result": {
+                        "analysis_date": "2025-08-30",
+                        "files": [
+                            {
+                                "confidence_score": 0.8,
+                                "license": "BSD-3-Clause",
+                                "name": "contourpy",
+                                "version": "1.3.1"
+                            },
+                            {
+                                "confidence_score": 0.8,
+                                "license": "BSD-3-Clause",
+                                "name": "contourpy",
+                                "version": "1.3.1"
+                            }
+                        ],
+                        "project_name": "MyCoolCompleteProject"
+                    }
+                },
+                {
+                    "id": "8fd82d6c-911d-4932-9d38-02fbadeace22",
+                    "status": "failed",
                     "result": None
                 }
             ]
@@ -112,13 +137,21 @@ class EventType(str, Enum):
     ANALYSIS_FAILED = "ANALYSIS_FAILED"
 
 
-class EventRecord(BaseModel):
+class Event(SQLModel, table=True):
     """
     Represents a single event log in the database.
     """
-    user_id: str = Field(description="ID of the user who initiated the event")
-    project_name: str = Field(description="Project name")
-    event: EventType = Field(description="Type of event that occurred")
-    timestamp: datetime = Field(default_factory=datetime.now)
-    # content can be the requirements.txt file (str), the requirements themselves, the analysis result, or None
-    content: Optional[Union[str, List[str], AnalysisResult]] = None
+    id: str = Field(default_factory=lambda: str(uuid4()),
+                     description="ID of the event", primary_key=True)
+    user_id: str = Field(
+        description="ID of the user who initiated the event", foreign_key="user.id")
+    project_name: str = Field(
+        min_length=1, max_length=100, description="Project name", index=True)
+    event: EventType = Field(
+        sa_column=Column(SAEnum(EventType, native_enum=False), nullable=False),
+        description="Type of event that occurred")
+    timestamp: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False))
+    # content can be a string (potential values: the requirements.txt file, the requirements
+    # themselves, or the analysis result), or None
+    content: Optional[str] = None

@@ -16,3 +16,6 @@ __pycache__/
 .devcontainer/
 .vscode/
 *.code-workspace
+
+# SQLite files
+*.db*
