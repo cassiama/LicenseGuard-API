@@ -43,7 +43,8 @@ async def test_get_valid_user_for_valid_token(monkeypatch, session_override):
     # otherwise, we would have to seed a DB
     monkeypatch.setattr(
         "services.users.get_user",
-        AsyncMock(return_value=UserPublic(id=uuid4(), username="johndoe",))
+        AsyncMock(return_value=UserPublic(
+            id=str(uuid4()), username="johndoe",))
     )
     user = await get_current_user(token, session_override)
     assert type(user) is UserPublic
@@ -65,7 +66,8 @@ async def test_get_current_user_raises_exception_on_expired_token(session_overri
 @pytest.mark.asyncio(loop_scope="session")
 async def test_get_current_user_raises_exception_on_invalid_user(monkeypatch, session_override):
     """Tests that `get_current_user()` raises HTTP 401 when the user no longer exists."""
-    monkeypatch.setattr("services.users.get_user", AsyncMock(return_value=None))
+    monkeypatch.setattr("services.users.get_user",
+                        AsyncMock(return_value=None))
     token = create_access_token({"sub": "ghost"})
     with pytest.raises(HTTPException) as ex:
         await get_current_user(token, session_override)

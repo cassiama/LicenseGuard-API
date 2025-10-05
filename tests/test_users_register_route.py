@@ -33,6 +33,7 @@ def test_success_create_new_user(client_with_seed):
     r = client_with_seed.post("/users/", json=_payload())
     assert r.status_code == status.HTTP_201_CREATED, r.text
     body = r.json()
+    print(body)
 
     assert HEX32.match(body["id"])
     assert body["username"] == "newuser"

@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import mssql
 
 
 # revision identifiers, used by Alembic.
@@ -35,7 +36,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.VARCHAR(36), sa.ForeignKey("user.id", ondelete="CASCADE"), nullable=False),
         sa.Column("project_name", sa.VARCHAR(100), index=True, nullable=False),
         sa.Column("event", sa.VARCHAR(18), nullable=False),
-        sa.Column("timestamp", sa.DATETIME(timezone=True), nullable=False),
+        sa.Column("timestamp", sa.DateTime(timezone=True).with_variant(mssql.DATETIMEOFFSET(precision=6), "mssql"), nullable=False),
         sa.Column("content", sa.TEXT, nullable=True)
     )
 
@@ -73,8 +74,6 @@ def upgrade() -> None:
             batch_op.create_foreign_key(
                 fk_name, "user", ["user_id"], ["id"], ondelete="CASCADE"
             )
-
-        # batch_op.create_foreign_key("fk_event_user_id_user", "user", ["user_id"], ["id"])
 
 def downgrade() -> None:
     """Downgrade schema."""

@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 from uuid import uuid4
 from pathlib import Path
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import AsyncGenerator, Generator, Any
 from fastapi.testclient import TestClient
 from sqlalchemy import event
@@ -32,11 +32,10 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
-from srv.app import app
-from srv.security import get_current_user
-from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
 from db.session import get_session
-
+from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
+from srv.security import get_current_user
+from srv.app import app
 
 # regex taken from this source: https://regex101.com/r/wL7uN1/1
 HEX32 = re.compile(
@@ -51,7 +50,7 @@ def client(session_override) -> Generator[TestClient, None, None]:
     # make sure every test request is logged in as a fake user
     def _fake_user_dep() -> UserPublic:
         return UserPublic(
-            id=uuid4(),
+            id=str(uuid4()),
             username="testuser",
             full_name="Test User",
             email="testuser@example.org",
@@ -197,7 +196,7 @@ async def session_override(test_engine):
 @pytest_asyncio.fixture
 async def client_with_seed(client: TestClient, session_override: AsyncSession):
     # seed the test user
-    user_id = uuid4()
+    user_id = str(uuid4())
     user = User(
         id=user_id,
         username="seeded",
@@ -213,20 +212,22 @@ async def client_with_seed(client: TestClient, session_override: AsyncSession):
     project_name = "MyCoolCompleteProject"
     seed_events = [
         Event(
-            id=uuid4(),
+            id=str(uuid4()),
             user_id=user_id,
             project_name=project_name,
             event=EventType.PROJECT_CREATED,
             content="requests==2.28.1",
+            timestamp=datetime.now(timezone.utc)
         ),
         Event(
-            id=uuid4(),
+            id=str(uuid4()),
             user_id=user_id,
             project_name=project_name,
             event=EventType.ANALYSIS_STARTED,
+            timestamp=datetime.now(timezone.utc)
         ),
         Event(
-            id=uuid4(),
+            id=str(uuid4()),
             user_id=user_id,
             project_name=project_name,
             event=EventType.ANALYSIS_COMPLETED,
@@ -241,7 +242,8 @@ async def client_with_seed(client: TestClient, session_override: AsyncSession):
                         confidence_score=1.0
                     )
                 ],
-            ).model_dump_json()
+            ).model_dump_json(),
+            timestamp=datetime.now(timezone.utc)
         ),
     ]
 

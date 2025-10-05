@@ -1,10 +1,10 @@
-from uuid import uuid4, UUID
+from uuid import uuid4
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime, timezone
 from typing import Optional
 from sqlalchemy import Enum as SAEnum
-from sqlmodel import SQLModel, Field, Column
+from sqlmodel import DateTime, SQLModel, Field, Column
 
 
 # object schemas
@@ -32,14 +32,14 @@ class UserCreate(UserBase):  # to be used for creating an user in the DB
 
 
 class User(UserBase, table=True):   # to be used when the user is stored in the DB
-    id: UUID = Field(default_factory=uuid4,
-                     description="User ID (UUID hex)", primary_key=True)
+    id: str = Field(default_factory=lambda: str(uuid4()),
+                     description="User ID (str hex)", primary_key=True)
     hashed_password: str
 
 
 # to be returned to the client (NOTE: should NEVER include password)
 class UserPublic(UserBase):
-    id: UUID
+    id: str
     # this allows the model to be created from ORM objects (like SQLAlchemy)
 
     class ConfigDict:
@@ -57,8 +57,8 @@ class Project(BaseModel):
     """Represents a single analysis project."""
     model_config = ConfigDict(from_attributes=True)
 
-    id: UUID = Field(default_factory=uuid4,
-                     description="Project ID (UUID hex)")
+    id: str = Field(default_factory=lambda: str(uuid4()),
+                     description="Project ID (str hex)")
     name: str = Field(min_length=1, max_length=100)
 
 
@@ -85,7 +85,7 @@ class AnalyzeResponse(BaseModel):
     """
     POST /analyze response. Status will be "IN_PROGRESS" when there's no result yet, or "FAILED"/"COMPLETED" when there's a result.
     """
-    project_id: UUID
+    project_id: str
     status: Status
     result: Optional[AnalysisResult] = None
 
@@ -141,9 +141,9 @@ class Event(SQLModel, table=True):
     """
     Represents a single event log in the database.
     """
-    id: UUID = Field(default_factory=uuid4,
+    id: str = Field(default_factory=lambda: str(uuid4()),
                      description="ID of the event", primary_key=True)
-    user_id: UUID = Field(
+    user_id: str = Field(
         description="ID of the user who initiated the event", foreign_key="user.id")
     project_name: str = Field(
         min_length=1, max_length=100, description="Project name", index=True)
@@ -151,7 +151,7 @@ class Event(SQLModel, table=True):
         sa_column=Column(SAEnum(EventType, native_enum=False), nullable=False),
         description="Type of event that occurred")
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc))
+        sa_column=Column(DateTime(timezone=True), nullable=False))
     # content can be a string (potential values: the requirements.txt file, the requirements
     # themselves, or the analysis result), or None
     content: Optional[str] = None

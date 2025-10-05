@@ -25,7 +25,7 @@ async def test_get_user_success_when_user_is_present(session_override):
 
     # make sure to add the test user to the database before querying for it
     test_user = User(
-        id=uuid4(),
+        id=str(uuid4()),
         username="johndoe",
         hashed_password="totally-hashed-secret-password!"
     )
@@ -63,7 +63,7 @@ async def test_authenticate_user_success_when_correct_credentials(monkeypatch, s
 
     # make sure to add the test user to the database before querying for it
     test_user = User(
-        id=uuid4(),
+        id=str(uuid4()),
         username="johndoe",
         hashed_password=get_hashed_pwd("secret")
     )

@@ -1,5 +1,6 @@
-import uuid
 import pytest
+from uuid import uuid4
+from datetime import datetime, timezone
 from conftest import HEX32
 from srv.schemas import Event, EventType
 from services.events import add_event, list_events
@@ -8,13 +9,14 @@ from services.events import add_event, list_events
 @pytest.mark.asyncio(loop_scope="session")
 async def test_event_add_and_filter(session_override):
     """Tests that the provided SQLAlchemy session stores events and filters by project/user."""
-    u1_id = uuid.uuid4()
+    u1_id = str(uuid4())
     await add_event(
         session_override,
         Event(
             user_id=u1_id,
             project_name="p1",
-            event=EventType.PROJECT_CREATED
+            event=EventType.PROJECT_CREATED,
+            timestamp=datetime.now(timezone.utc)
         )
     )
     await add_event(
@@ -22,7 +24,8 @@ async def test_event_add_and_filter(session_override):
         Event(
             user_id=u1_id,
             project_name="p2",
-            event=EventType.PROJECT_CREATED
+            event=EventType.PROJECT_CREATED,
+            timestamp=datetime.now(timezone.utc)
         )
     )
     events = await list_events(session_override, u1_id, "p1")

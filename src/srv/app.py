@@ -178,7 +178,8 @@ async def analyze_dependencies(
             user_id=user.id,
             project_name=project_name,
             event=EventType.PROJECT_CREATED,
-            content=requirements_content
+            content=requirements_content,
+            timestamp=datetime.now(timezone.utc)
         ))
 
     # always make sure to reset the file pointer after reading!
@@ -193,6 +194,7 @@ async def analyze_dependencies(
                 user_id=user.id,
                 project_name=project_name,
                 event=EventType.VALIDATION_FAILED,
+                timestamp=datetime.now(timezone.utc)
             )
         )
         raise e
@@ -207,7 +209,8 @@ async def analyze_dependencies(
             user_id=user.id,
             project_name=project_name,
             event=EventType.VALIDATION_SUCCESS,
-            content=", ".join(_reqs)
+            content=", ".join(_reqs),
+            timestamp=datetime.now(timezone.utc)
         )
     )
 
@@ -217,11 +220,12 @@ async def analyze_dependencies(
         Event(
             user_id=user.id,
             project_name=project_name,
-            event=EventType.ANALYSIS_STARTED
+            event=EventType.ANALYSIS_STARTED,
+            timestamp=datetime.now(timezone.utc)
         )
     )
     # retrieve the analysis from the LLM
-    project_id = uuid4()
+    project_id = str(uuid4())
     llm_result = await get_llm_analysis(project_name, _reqs)
 
     # log event (either analysis completion or failure) in the database
@@ -231,7 +235,8 @@ async def analyze_dependencies(
             user_id=user.id,
             project_name=project_name,
             event=EventType.ANALYSIS_COMPLETED if llm_result else EventType.ANALYSIS_FAILED,
-            content=llm_result.model_dump_json() if llm_result else None
+            content=llm_result.model_dump_json() if llm_result else None,
+            timestamp=datetime.now(timezone.utc)
         )
     )
     return AnalyzeResponse(
