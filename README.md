@@ -65,7 +65,7 @@ docker pull licenseguard/license-guard:api-latest
 
 > **NOTE:** This is ***required*** for deploying the Docker image in production environments. Also, you ensure that your server can communicate with your database. Otherwise, you might have errors!
 
-> **NOTE:** For SQLite databases, you should mount the `.db` file into a Docker volume and then modify the above command to mount it onto the container with this flag: `--mount type=source=NAME_OF_VOLUME,target=/api/data/PATH_TO_DB`. You're responsible for
+> **NOTE:** For SQLite databases, you should mount the `.db` file into a Docker volume and then modify the above command to mount it onto the container with this flag: `--mount type=source=NAME_OF_VOLUME,target=/api/data/PATH_TO_DB`.
 
 3. **Run the server** by running the following command (depending on your preference on environment variables):
 
