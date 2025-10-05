@@ -1,241 +1,44 @@
-type: collection.insomnia.rest/5.0
-name: Deprecated Routes
+name: Insomnia CI (Inso tests)
+
 on:
-  push:
-    branches:
-      - 'feature/**'
-      - 'feature-*'
-  pull_request:
-    branches:
-      - main
-meta:
-  id: wrk_cdb42f41c4644c1f966393b9998551a6
-  created: 1758387906003
-  modified: 1758388086253
-  description: This collection tests if the routes marked as "deprecated" are
-    actually deprecated. This means they should all return a 410 status code and
-    include a Sunset date in their header responses.
-collection:
-  - name: v0.2.0+
-    meta:
-      id: fld_7db614c763ec460790a99fca8ee8201b
-      created: 1758393231080
-      modified: 1758393290040
-      sortKey: -1758393231080
-      description: ""
-    children:
-      - url: "{{ _.baseUrl }}"
-        name: / (returns status code 410)
-        meta:
-          id: req_4a89d4a2a33f4f03982ff56563fdc5ae
-          created: 1758387906228
-          modified: 1758393265233
-          isPrivate: false
-          description: ""
-          sortKey: -1758393263033
-        method: GET
-        headers:
-          - name: User-Agent
-            value: insomnia/11.6.1
-        scripts:
-          afterResponse: >
-            // status
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL for API under test'
+        required: false
+        default: 'http://localhost:8000'
+      start_api:
+        description: 'start app in this job? true/false'
+        required: false
+        default: 'false'
 
-            insomnia.test("status should be 410", () => {
-            	insomnia.expect(insomnia.response.code).to.equal(410);
-            	insomnia.expect(insomnia.response.status).to.equal("Gone");
-            });
+jobs:
+  inso-tests:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ github.event.inputs.base_url || 'http://localhost:8000' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: (Optional) Start API in background
+        if: ${{ github.event.inputs.start_api == 'true' }}
+        run: |
+          # adjust these commands to your repo's start routine
+          pip install -r requirements.txt
+          nohup python -m uvicorn app:app --host 0.0.0.0 --port 8000 &>/tmp/uvicorn.log &
+          # simple readiness probe
+          for i in $(seq 1 30); do
+            if curl -sSf "${{ env.BASE_URL }}" >/dev/null 2>&1; then
+              echo "API is up"
+              break
+            fi
+            echo "Waiting... ($i)"
+            sleep 1
+          done
 
-            // headers
-
-            insomnia.test("all expected header keys should be in the response",
-            () => {
-            	const EXPECTED_HEADERS = ["date", "server", "deprecation", "sunset", "content-length", "content-type"];
-            	for (let i = 0; i < insomnia.response.headers.list.length; i++) {
-            		insomnia.expect(
-            			insomnia.response.headers.list[i].key.toLowerCase()
-            		).to.equal(EXPECTED_HEADERS[i]);
-            	}
-            });
-
-            insomnia.test("the Deprecation header should have the correct
-            HTTP-date", () => {
-            	let header = insomnia.response.headers.find(header => header.key === "deprecation");
-            	insomnia.expect(header.value).to.equal("Thu, 21 Aug 2025 22:23:06 GMT");
-            });
-
-            insomnia.test("the Sunset header should have the correct HTTP-date",
-            () => {
-            	let header = insomnia.response.headers.find(header => header.key === "sunset");
-            	insomnia.expect(header.value).to.equal("Sat, 30 Aug 2025 23:59:59 GMT");
-            });
-
-
-            // body
-
-            insomnia.test("body should include \"retired\"", () => {
-            	insomnia.expect(insomnia.response.text().toLowerCase()).to.include("retired");
-            });
-        settings:
-          renderRequestBody: true
-          encodeUrl: true
-          followRedirects: global
-          cookies:
-            send: true
-            store: true
-          rebuildPath: true
-      - url: "{{ _.baseUrl }}/llm/guess"
-        name: /llm/guess (returns status code 410)
-        meta:
-          id: req_a2240f412d75471bad214b7017117b55
-          created: 1758388951676
-          modified: 1758393262957
-          isPrivate: false
-          description: ""
-          sortKey: -1758393262933
-        method: POST
-        body:
-          mimeType: application/json
-          text: |-
-            {
-            	"body": ""
-            }
-        headers:
-          - name: Content-Type
-            value: application/json
-          - name: User-Agent
-            value: insomnia/11.6.1
-        scripts:
-          afterResponse: >
-            // status
-
-            insomnia.test("status should be 410", () => {
-            	insomnia.expect(insomnia.response.code).to.equal(410);
-            	insomnia.expect(insomnia.response.status).to.equal("Gone");
-            });
-
-
-            // headers
-
-            insomnia.test("all expected header keys should be in the response",
-            () => {
-            	const EXPECTED_HEADERS = ["date", "server", "deprecation", "sunset", "content-length", "content-type"];
-            	for (let i = 0; i < insomnia.response.headers.list.length; i++) {
-            		insomnia.expect(
-            			insomnia.response.headers.list[i].key.toLowerCase()
-            		).to.equal(EXPECTED_HEADERS[i]);
-            	}
-            });
-
-            insomnia.test("the Deprecation header should have the correct
-            HTTP-date", () => {
-            	let header = insomnia.response.headers.find(header => header.key === "deprecation");
-            	insomnia.expect(header.value).to.equal("Thu, 21 Aug 2025 23:56:46 GMT");
-            });
-
-            insomnia.test("the Sunset header should have the correct HTTP-date",
-            () => {
-            	let header = insomnia.response.headers.find(header => header.key === "sunset");
-            	insomnia.expect(header.value).to.equal("Sat, 30 Aug 2025 23:59:59 GMT");
-            });
-
-
-            // body
-
-            insomnia.test("body should include \"retired\"", () => {
-            	insomnia.expect(insomnia.response.text().toLowerCase()).to.include("retired");
-            });
-        settings:
-          renderRequestBody: true
-          encodeUrl: true
-          followRedirects: global
-          cookies:
-            send: true
-            store: true
-          rebuildPath: true
-  - name: v0.3.0+
-    meta:
-      id: fld_61f25de0613c4260b7cc06dfb7b0840b
-      created: 1758393271996
-      modified: 1758433594900
-      sortKey: -1758388861425
-      description: ""
-    children:
-      - url: "{{ _.baseUrl }}/status/{{ _.project_id }}"
-        name: /status/{project_id} (returns status code 410)
-        meta:
-          id: req_e2f0422b90d3433cbe768b2e0a25eab3
-          created: 1758388861525
-          modified: 1758433563528
-          isPrivate: false
-          description: ""
-          sortKey: -1758393280687
-        method: GET
-        headers:
-          - name: User-Agent
-            value: insomnia/11.6.1
-        scripts:
-          afterResponse: >
-            // status
-
-            insomnia.test("status should be 410", () => {
-            	insomnia.expect(insomnia.response.code).to.equal(410);
-            	insomnia.expect(insomnia.response.status).to.equal("Gone");
-            });
-
-
-            // headers
-
-            insomnia.test("all expected header keys should be in the response",
-            () => {
-            	const EXPECTED_HEADERS = ["date", "server", "deprecation", "sunset", "content-length", "content-type"];
-            	for (let i = 0; i < insomnia.response.headers.list.length; i++) {
-            		insomnia.expect(
-            			insomnia.response.headers.list[i].key.toLowerCase()
-            		).to.equal(EXPECTED_HEADERS[i]);
-            	}
-            });
-
-            insomnia.test("the Deprecation header should have the correct
-            HTTP-date", () => {
-            	let header = insomnia.response.headers.find(header => header.key === "deprecation");
-            	insomnia.expect(header.value).to.equal("Sat, 30 Aug 2025 17:43:17 GMT");
-            });
-
-            insomnia.test("the Sunset header should have the correct HTTP-date",
-            () => {
-            	let header = insomnia.response.headers.find(header => header.key === "sunset");
-            	insomnia.expect(header.value).to.equal("Sun, 21 Sep 2025 23:59:59 GMT");
-            });
-
-
-            // body
-
-            insomnia.test("body should include \"retired\"", () => {
-            	insomnia.expect(insomnia.response.text().toLowerCase()).to.include("retired");
-            });
-        settings:
-          renderRequestBody: true
-          encodeUrl: true
-          followRedirects: global
-          cookies:
-            send: true
-            store: true
-          rebuildPath: true
-cookieJar:
-  name: Default Jar
-  meta:
-    id: jar_36a417d02eb4095a6e4161f88f962a12caa2d442
-    created: 1758387906019
-    modified: 1758433594890
-environments:
-  name: Base Environment
-  meta:
-    id: env_36a417d02eb4095a6e4161f88f962a12caa2d442
-    created: 1758387906014
-    modified: 1758433594898
-    isPrivate: false
-  data:
-    baseUrl: http://localhost:8000
-    project_id: some-id
+      - name: Run Inso tests (Docker)
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/work" -w /work \
+            kong/inso:latest \
+            inso run test "Deprecated Routes" --env "Base Environment" --env-var baseUrl=${{ env.BASE_URL }}
