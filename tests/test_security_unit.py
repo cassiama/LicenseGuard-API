@@ -29,8 +29,8 @@ def test_produce_jwt_that_can_expire_and_is_decodable():
     for b64 in token.split("."):
         assert BASE64URL.match(b64)
 
-    payload = jwt.decode(token, str(settings.jwt_secret_key),
-                         algorithms=[settings.jwt_algorithm])
+    payload = jwt.decode(token, settings.jwt_secret_key.get_secret_value(),
+                         algorithms=[settings.jwt_algorithm.get_secret_value()])
     assert payload.get("sub") == "johndoe"
     assert "exp" in payload
 
