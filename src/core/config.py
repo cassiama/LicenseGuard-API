@@ -12,8 +12,8 @@ class Settings(BaseSettings):
         env_file=ROOT / ".env", env_file_encoding='utf-8')
 
     openai_api_key: SecretStr | None = None
-    jwt_secret_key: str | None = token_hex(16)
-    jwt_algorithm: str = "HS256"
+    jwt_secret_key: SecretStr = SecretStr(token_hex(16))
+    jwt_algorithm: SecretStr = SecretStr("HS256")
     jwt_access_token_expire_minutes: int = 30
     db_url: str | URL | None = None
 
