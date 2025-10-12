@@ -37,9 +37,10 @@ You will need to provide the following, otherwise the server will fail to run an
 - `OPENAI_API_KEY`: fairly self-explanatory (if you don't have one, you can get one on the [OpenAI Platform](https://platform.openai.com/api-keys)). Your key should look like this: `sk-proj-<random characters>-<random characters>`
 - `DB_URL`: a connection string to whatever database you're using. You **MUST** include **the async driver associated with your SQL database** in your string. Your URL should look like this: `postgresql+asyncpg://user:pw@host:5432/dbname`
   > **NOTE:** All of the async drivers for the aforementioned SQL dialects are supported *EXCEPT* `asyncmy`, which is not supported at the moment.
-- `JWT_SECRET_KEY`: a random 32-character hexadecimal string. It should look like this: `9f0255336305508b8718929ddfbd01669d892e2c52109958f647a3758d5dc2ea`
 
 Optionally, for the sake of reproducibility, you can also provide the following environment variables:
+
+- `JWT_SECRET_KEY`: a random 32-character hexadecimal string. It should look like this: `9f0255336305508b8718929ddfbd01669d892e2c52109958f647a3758d5dc2ea`
 - `JWT_ALGORITHM`: a string corresponding to [one of the JWT algorithms](https://datatracker.ietf.org/doc/html/rfc7518#section-3)
 - `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`: an integer
 

@@ -43,23 +43,12 @@ def create_access_token(
         expire = datetime.now(
             timezone.utc) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
     payload.update({"exp": expire})
-    try:
-        # if the JWT_SECRET_KEY was imported from the .env file, then we need to convert it to a string
-        # otherwise, it might be an automatically generated value (see core/config.py)
-        is_secret_str = type(settings.jwt_secret_key) is SecretStr
-        is_str = type(settings.jwt_secret_key) is str
-        if is_secret_str or is_str:
-            access_token = jwt.encode(
-                payload,
-                str(settings.jwt_secret_key) if is_secret_str else settings.jwt_secret_key,
-                algorithm=settings.jwt_algorithm
-            )
-            return access_token
-
-        else:
-            raise TypeError("Expected a string (or SecretStr) value")
-    except TypeError as e:
-        raise e
+    access_token = jwt.encode(
+        payload,
+        settings.jwt_secret_key.get_secret_value(),
+        algorithm=settings.jwt_algorithm.get_secret_value()
+    )
+    return access_token
 
 
 # dependency for retrieving the current authenticated user
@@ -77,25 +66,16 @@ async def get_current_user(
     )
 
     try:
-        # if the JWT_SECRET_KEY was imported from the .env file, then we need to convert it to a string
-        # otherwise, it might be an automatically generated value (see core/config.py)
-        is_secret_str = type(settings.jwt_secret_key) is SecretStr
-        is_str = type(settings.jwt_secret_key) is str
-        if is_secret_str or is_str:
-            payload = jwt.decode(
-                token,
-                str(settings.jwt_secret_key) if is_secret_str else settings.jwt_secret_key,
-                algorithms=[settings.jwt_algorithm]
-            )
-            username: str = payload.get("sub")
-            if username is None:
-                print("Couldn't find the username provided in the JWT!")
-                raise credentials_exception
-            token_data = TokenData(username=username)
-        else:
-            raise TypeError("Expected a string (or SecretStr) value")
-    except TypeError as e:
-        raise e
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret_key.get_secret_value(),
+            algorithms=[settings.jwt_algorithm.get_secret_value()]
+        )
+        username: str = payload.get("sub")
+        if username is None:
+            print("Couldn't find the username provided in the JWT!")
+            raise credentials_exception
+        token_data = TokenData(username=username)
     except InvalidTokenError:
         print("Couldn't verify the JWT.")
         raise credentials_exception
