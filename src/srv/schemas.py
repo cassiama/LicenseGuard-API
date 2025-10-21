@@ -8,7 +8,6 @@ from sqlmodel import DateTime, SQLModel, Field, Column
 
 
 # object schemas
-
 # for JWTs:
 class Token(BaseModel):
     access_token: str
@@ -40,10 +39,23 @@ class User(UserBase, table=True):   # to be used when the user is stored in the 
 # to be returned to the client (NOTE: should NEVER include password)
 class UserPublic(UserBase):
     id: str
+    
     # this allows the model to be created from ORM objects (like SQLAlchemy)
-
     class ConfigDict:
         from_attributes = True
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": "37506042c060455783c5841f733d7449",
+                    "username": "johndoe",
+                    "full_name": "John Doe",
+                    "email": "johndoe@example.org"
+                }
+            ]
+        }
+    } # type: ignore
 
 
 # for analysis results:
@@ -94,7 +106,7 @@ class AnalyzeResponse(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "id": "93fe969a-c0fc-4c01-8b92-b866927c552f",
+                    "id": "93fe969ac0fc4c018b92b866927c552f",
                     "status": "completed",
                     "result": {
                         "analysis_date": "2025-08-30",
@@ -116,7 +128,7 @@ class AnalyzeResponse(BaseModel):
                     }
                 },
                 {
-                    "id": "8fd82d6c-911d-4932-9d38-02fbadeace22",
+                    "id": "8fd82d6c911d49329d3802fbadeace22",
                     "status": "failed",
                     "result": None
                 }

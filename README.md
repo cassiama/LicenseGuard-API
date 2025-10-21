@@ -93,17 +93,24 @@ Once you have the server running, you can view the documentation by navigating t
 
 For the latest image of the API on Docker Hub, you can access the following routes:
 
+### Active (Non-Deprecated)
+
+#### `/` routes
+
 - `POST /analyze`: Accepts a `requirements.txt` file upload and a project name, analyzes each license associated with the dependencies in the `requirements.txt` file, and returns the analysis.
   - Sample Request:
-    - a `requirements.txt` (`multipart/form-data`; should be `text/plain` MIME type),
-    - a name for your project
+    - Headers:
+      - `Authorization: Bearer <JWT>`
+    - Form Inputs:
+      - a `requirements.txt` (`multipart/form-data`; should be `text/plain` MIME type),
+      - a name for your project
   - Sample Response:
 
     - Success:
 
       ```json
         {
-          "project_id": "93fe969a-c0fc-4c01-8b92-b866927c552f",
+          "project_id": "93fe969ac0fc4c018b92-b866927c552f",
           "status": "completed",
           "result": {
             "analysis_date": "2025-08-30",
@@ -130,15 +137,71 @@ For the latest image of the API on Docker Hub, you can access the following rout
 
       ```json
       {
-        "project_id": "8fd82d6c-911d-4932-9d38-02fbadeace22",
+        "project_id": "8fd82d6c911d49329d3802fbadeace22",
         "status": "failed",
         "result": null
       }
       ```
 
+#### `/users` routes
+
+- `POST /users`: Takes in the `username` and `password` (`full_name` and `email` are optional) of the desired new user in a JSON body.Then, it creates and returns a new user, which will be saved into the database.
+
+  - Sample Request:
+    - Headers:
+      - `Content-Type: application/json`
+    - Data Inputs:
+      - a username for the user
+      - a password for the user
+      - (*optional*) the full name of the user
+      - (*optional*) the email of the user
+  - Sample Response:
+
+    ```json
+    {
+      "id": "37506042c060455783c5841f733d7449",
+      "username": "johndoe",
+      "full_name": "John Doe",
+      "email": "johndoe@example.org"
+    }
+    ```
+
+- `GET /users/token`: Takes in the `username` and `password` from the OAuth2 form data. Logs the user in and returns an access token (JWT).
+  
+  - Sample Response:
+    - Headers:
+      - `Content-Type: application/x-www-form-urlencoded"`
+    - Data Inputs:
+      - the username for the user
+      - the password for the user
+  
+  - Sample Response:
+  
+  ```json
+    {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMj M0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaXNTb2NpYWwiOnRydWV9. 4pcPyMD09olPSyXnrXCjTwXyr4BsezdI1AVTmud2fU4",
+      "token_type": "bearer"
+    }
+  ```
+
+- `GET /users/me`: Returns the current authenticated user's details.
+
+  - Sample Response:
+
+    ```json
+    {
+      "id": "37506042c060455783c5841f733d7449",
+      "username": "johndoe",
+      "full_name": "John Doe",
+      "email": "johndoe@example.org"
+    }
+    ```
+
 ### Deprecated Routes
 
 The following routes are deprecated (as of v0.3.1), so you should avoid using them. You can still access them if you want, but all routes will return a `HTTP 410 Gone` status code with `Deprecation` and `Sunset` headers:
+
+#### `/` routes (deprecated)
 
 - `GET /`:
 
@@ -153,6 +216,8 @@ The following routes are deprecated (as of v0.3.1), so you should avoid using th
         }
         ```
 
+#### `/llm` routes (deprecated)
+
 - `POST /llm/guess`:
 
   > *Originally*: Takes a string (the prompt to the LLM) as its body. The LLM expects a prompt that lists Python packages. Returns a JSON response that guesses the licenses of the packages mentioned in the prompt.
@@ -165,6 +230,8 @@ The following routes are deprecated (as of v0.3.1), so you should avoid using th
             "detail": "POST /llm/guess has been retired."
         }
         ```
+
+#### `/status` routes (deprecated)
 
 - `GET /status/{project_id}`:
 
