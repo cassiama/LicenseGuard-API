@@ -18,7 +18,7 @@ settings = get_settings()
 # setup password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# setup OAuth2 scheme; points to the login route
+# setup OAuth2 scheme for users; points to the login route
 oauth2 = OAuth2PasswordBearer(tokenUrl="/users/token")
 
 

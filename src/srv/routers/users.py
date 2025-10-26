@@ -79,7 +79,7 @@ async def get_access_token(
         )
     access_token = create_access_token(
         {"sub": user.username}, expires_delta=None)
-    return {"access_token": access_token, "token_type": "bearer"}
+    return Token(access_token=access_token, token_type="bearer")
 
 
 @router.get(
