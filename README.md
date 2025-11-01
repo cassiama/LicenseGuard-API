@@ -37,14 +37,25 @@ You will need to provide the following, otherwise the server will fail to run an
 - `OPENAI_API_KEY`: fairly self-explanatory (if you don't have one, you can get one on the [OpenAI Platform](https://platform.openai.com/api-keys)). Your key should look like this: `sk-proj-<random characters>-<random characters>`
 - `DB_URL`: a connection string to whatever database you're using. You **MUST** include **the async driver associated with your SQL database** in your string. Your URL should look like this: `postgresql+asyncpg://user:pw@host:5432/dbname`
   > **NOTE:** All of the async drivers for the aforementioned SQL dialects are supported *EXCEPT* `asyncmy`, which is not supported at the moment.
+- `MCP_CLIENT_ID`: the client ID (the "username") of a "service" user for a MCP server. This is not required *UNLESS* you are planning on using a MCP server to call this API. It should look this: "mcp-server"
+- `MCP_CLIENT_SECRET`: the client secret (the "password") of a "service" user for a MCP server. This is not required *UNLESS* you are planning on using a MCP server to call this API. It could technically be whatever string you want, but you should probably make it a fairly secure password.
 
 Optionally, for the sake of reproducibility, you can also provide the following environment variables:
 
 - `JWT_SECRET_KEY`: a random 32-character hexadecimal string. It should look like this: `9f0255336305508b8718929ddfbd01669d892e2c52109958f647a3758d5dc2ea`
 - `JWT_ALGORITHM`: a string corresponding to [one of the JWT algorithms](https://datatracker.ietf.org/doc/html/rfc7518#section-3)
-- `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`: an integer
+- `USER_ACCESS_TOKEN_EXPIRE_MINUTES`: an integer
+- `JWT_AUDIENCE`: a string corresponding to the audience that JWTs issued by this server are intended for (refer to [RFC 7519 Section 4.1.3](https://www.rfc-editor.org/rfc/rfc7519#section-4.1.3)). It should look like this: `licenseguard-api`
+- `MCP_ACCESS_TOKEN_EXPIRE_MINUTES`: an integer
+- `MCP_REQUIRED_SCOPES`: a space-delimited string which correspond to the routes that the MCP server must be allowed to call. It should look like this: `analyze:run project:run`
 
-If you don't, then the server will default to "HS256" for the algorithm and 30 minutes for the expiration.
+If you don't, then the server will default to  the following:
+
+- "HS256" for the algorithm
+- 30 minutes for the expiration of user JWTs
+- "licenseguard-api" for the JWT audience
+- 10 minutes for the expiration of MCP JWTs
+- "analyze:run" for the required scopes for MCP JWTs
 
 ### Usage
 
@@ -166,7 +177,7 @@ For the latest image of the API on Docker Hub, you can access the following rout
     }
     ```
 
-- `GET /users/token`: Takes in the `username` and `password` from the OAuth2 form data. Logs the user in and returns an access token (JWT).
+- `POST /users/token`: Takes in the `username` and `password` from the OAuth2 form data. Logs the user in and returns an access token (JWT).
   
   - Sample Response:
     - Headers:
@@ -196,6 +207,27 @@ For the latest image of the API on Docker Hub, you can access the following rout
       "email": "johndoe@example.org"
     }
     ```
+
+#### `/mcp` routes
+
+- `POST /mcp/token`: Takes in the `client_id` and `client_secret` (and, optionally, the `scopes`) from the form data. Returns an access token (JWT) for the MCP server. Used primarily by the MCP server in order to get access to protected resources.
+  
+  - Sample Response:
+    - Headers:
+      - `Content-Type: application/x-www-form-urlencoded"`
+    - Data Inputs:
+      - the client ID for the MCP "service" user
+      - the client secret for the MCP "service" user
+      - (*optional*) the scopes/permissions for the MCP "service" user
+  
+  - Sample Response:
+  
+  ```json
+    {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMj M0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaXNTb2NpYWwiOnRydWV9. 4pcPyMD09olPSyXnrXCjTwXyr4BsezdI1AVTmud2fU4",
+      "token_type": "bearer"
+    }
+  ```
 
 ### Deprecated Routes
 
