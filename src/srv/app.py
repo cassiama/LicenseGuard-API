@@ -4,6 +4,7 @@ from email.utils import format_datetime
 from uuid import uuid4
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -46,6 +47,17 @@ app.include_router(mcp_router.router)
 app.include_router(llm_router.router)
 # all routes from this router are deprecated as of v0.3.0
 app.include_router(status_router.router)
+
+
+# allows the frontend to make requests to this REST API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    # TODO: for production, change to be specifically the frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 # LLM / OpenAI definitions
 llm = ChatOpenAI(
