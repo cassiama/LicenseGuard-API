@@ -37,8 +37,6 @@ You will need to provide the following, otherwise the server will fail to run an
 - `OPENAI_API_KEY`: fairly self-explanatory (if you don't have one, you can get one on the [OpenAI Platform](https://platform.openai.com/api-keys)). Your key should look like this: `sk-proj-<random characters>-<random characters>`
 - `DB_URL`: a connection string to whatever database you're using. You **MUST** include **the async driver associated with your SQL database** in your string. Your URL should look like this: `postgresql+asyncpg://user:pw@host:5432/dbname`
   > **NOTE:** All of the async drivers for the aforementioned SQL dialects are supported *EXCEPT* `asyncmy`, which is not supported at the moment.
-- `MCP_CLIENT_ID`: the client ID (the "username") of a "service" user for a MCP server. This is not required *UNLESS* you are planning on using a MCP server to call this API. It should look this: "mcp-server"
-- `MCP_CLIENT_SECRET`: the client secret (the "password") of a "service" user for a MCP server. This is not required *UNLESS* you are planning on using a MCP server to call this API. It could technically be whatever string you want, but you should probably make it a fairly secure password.
 
 Optionally, for the sake of reproducibility, you can also provide the following environment variables:
 
