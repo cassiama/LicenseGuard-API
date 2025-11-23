@@ -22,7 +22,7 @@ In short:
 - have Docker Desktop/Engine installed on your local machine
 - access to a SQL Database
 - have an OpenAI API key
-- environment variables for generating JWTs and storing the database's URL
+- environment variables for storing the database's URL
 
 ---
 
@@ -47,7 +47,7 @@ Optionally, for the sake of reproducibility, you can also provide the following 
 - `MCP_ACCESS_TOKEN_EXPIRE_MINUTES`: an integer
 - `MCP_REQUIRED_SCOPES`: a space-delimited string which correspond to the routes that the MCP server must be allowed to call. It should look like this: `analyze:run project:run`
 
-If you don't, then the server will default to  the following:
+If you don't, then the server will default to the following:
 
 - "HS256" for the algorithm
 - 30 minutes for the expiration of user JWTs
