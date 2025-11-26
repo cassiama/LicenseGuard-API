@@ -16,12 +16,13 @@ class Settings(BaseSettings):
     jwt_algorithm: SecretStr = SecretStr("HS256")
     user_access_token_expire_minutes: int = 30
     db_url: str | URL | None = None
-    jwt_audience: SecretStr = SecretStr("licenseguard-api")
-    mcp_client_id: SecretStr | None = None
-    mcp_client_secret: SecretStr | None = None
-    mcp_access_token_expire_minutes: int = 10
-    # must be a string of space-delimited scopes
-    mcp_required_scopes: SecretStr = SecretStr("analyze:run")
+    # TODO: uncomment these env vars when we've implemented the OAuth2 Client Credentials auth for MCP servers
+    # jwt_audience: SecretStr = SecretStr("licenseguard-api")
+    # mcp_client_id: SecretStr | None = None
+    # mcp_client_secret: SecretStr | None = None
+    # mcp_access_token_expire_minutes: int = 10
+    # # must be a string of space-delimited scopes
+    # mcp_required_scopes: SecretStr = SecretStr("analyze:run")
 
 
 def get_settings() -> Settings:

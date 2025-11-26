@@ -12,7 +12,7 @@ from core.config import get_settings
 from services.events import add_event
 from db.session import get_session, init_engine, close_engine
 from .schemas import AnalyzeResponse, AnalysisResult, Event, EventType, Status, UserPublic
-from .routers import llm as llm_router, status as status_router, users as users_router, mcp as mcp_router
+from .routers import llm as llm_router, status as status_router, users as users_router
 from .validators import parse_requirements_file, validate_requirements_file
 from .security import get_current_user
 
@@ -42,7 +42,6 @@ async def lifespan(app):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(users_router.router)
-app.include_router(mcp_router.router)
 # all routes from this router are deprecated as of v0.2.0
 app.include_router(llm_router.router)
 # all routes from this router are deprecated as of v0.3.0
