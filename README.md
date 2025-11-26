@@ -43,17 +43,11 @@ Optionally, for the sake of reproducibility, you can also provide the following 
 - `JWT_SECRET_KEY`: a random 32-character hexadecimal string. It should look like this: `9f0255336305508b8718929ddfbd01669d892e2c52109958f647a3758d5dc2ea`
 - `JWT_ALGORITHM`: a string corresponding to [one of the JWT algorithms](https://datatracker.ietf.org/doc/html/rfc7518#section-3)
 - `USER_ACCESS_TOKEN_EXPIRE_MINUTES`: an integer
-- `JWT_AUDIENCE`: a string corresponding to the audience that JWTs issued by this server are intended for (refer to [RFC 7519 Section 4.1.3](https://www.rfc-editor.org/rfc/rfc7519#section-4.1.3)). It should look like this: `licenseguard-api`
-- `MCP_ACCESS_TOKEN_EXPIRE_MINUTES`: an integer
-- `MCP_REQUIRED_SCOPES`: a space-delimited string which correspond to the routes that the MCP server must be allowed to call. It should look like this: `analyze:run project:run`
 
 If you don't, then the server will default to the following:
 
 - "HS256" for the algorithm
 - 30 minutes for the expiration of user JWTs
-- "licenseguard-api" for the JWT audience
-- 10 minutes for the expiration of MCP JWTs
-- "analyze:run" for the required scopes for MCP JWTs
 
 ### Usage
 
@@ -205,27 +199,6 @@ For the latest image of the API on Docker Hub, you can access the following rout
       "email": "johndoe@example.org"
     }
     ```
-
-#### `/mcp` routes
-
-- `POST /mcp/token`: Takes in the `client_id` and `client_secret` (and, optionally, the `scopes`) from the form data. Returns an access token (JWT) for the MCP server. Used primarily by the MCP server in order to get access to protected resources.
-  
-  - Sample Response:
-    - Headers:
-      - `Content-Type: application/x-www-form-urlencoded"`
-    - Data Inputs:
-      - the client ID for the MCP "service" user
-      - the client secret for the MCP "service" user
-      - (*optional*) the scopes/permissions for the MCP "service" user
-  
-  - Sample Response:
-  
-  ```json
-    {
-      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMj M0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaXNTb2NpYWwiOnRydWV9. 4pcPyMD09olPSyXnrXCjTwXyr4BsezdI1AVTmud2fU4",
-      "token_type": "bearer"
-    }
-  ```
 
 ### Deprecated Routes
 
