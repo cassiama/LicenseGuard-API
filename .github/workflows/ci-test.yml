@@ -69,6 +69,8 @@ jobs:
       # Fast ruff setup
       - name: Lint with ruff
       - uses: astral-sh/ruff-action@v3
+        run:
+          uv run ruff check .
       
       - name: Run tests
         run: uv run pytest -q
