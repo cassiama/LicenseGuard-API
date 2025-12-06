@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from email.utils import format_datetime
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, status
 
 # corresponds to commit 9ac8af3
 DEPRECATION_DATE = datetime(2025, 8, 30, 17, 43, 17, tzinfo=timezone.utc)

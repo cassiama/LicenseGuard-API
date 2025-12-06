@@ -173,7 +173,7 @@ For the latest image of the API on Docker Hub, you can access the following rout
   
   - Sample Response:
     - Headers:
-      - `Content-Type: application/x-www-form-urlencoded"`
+      - `Content-Type: application/x-www-form-urlencoded`
     - Data Inputs:
       - the username for the user
       - the password for the user
@@ -182,7 +182,7 @@ For the latest image of the API on Docker Hub, you can access the following rout
   
   ```json
     {
-      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMj M0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaXNTb2NpYWwiOnRydWV9. 4pcPyMD09olPSyXnrXCjTwXyr4BsezdI1AVTmud2fU4",
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaXNTb2NpYWwiOnRydWV9.4pcPyMD09olPSyXnrXCjTwXyr4BsezdI1AVTmud2fU4",
       "token_type": "bearer"
     }
   ```

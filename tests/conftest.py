@@ -32,10 +32,10 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
-from db.session import get_session
-from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
-from srv.security import get_current_user
-from srv.app import app
+from db.session import get_session # noqa: E402
+from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic # noqa: E402
+from srv.security import get_current_user # noqa: E402
+from srv.app import app # noqa: E402
 
 # regex taken from this source: https://regex101.com/r/wL7uN1/1
 HEX32 = re.compile(

@@ -1,6 +1,4 @@
-import copy
-import pytest
-from fastapi import HTTPException, status
+from fastapi import status
 from conftest import HEX32
 
 

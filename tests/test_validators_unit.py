@@ -19,7 +19,7 @@ def _uf(filename: str, data: bytes, content_type: str) -> UploadFile:
 async def test_validator_ok_roundtrip():
     uf = _uf("requirements.txt", b"requests==2.32.3\n", "text/plain")
     result = await validate_requirements_file(uf)
-    assert result == True
+    assert result
 
 
 @pytest.mark.asyncio
@@ -37,7 +37,7 @@ async def test_validator_accepts_pep508_direct_url():
         "text/plain",
     )
     result = await validate_requirements_file(uf)
-    assert result == True
+    assert result
 
 
 @pytest.mark.asyncio
@@ -55,7 +55,7 @@ async def test_parser_accepts_pep508_direct_url():
 async def test_validator_accepts_editable_and_keeps_named():
     uf = _uf("requirements.txt", b"-e .[all]\nfastapi>=0.110\n", "text/plain")
     result = await validate_requirements_file(uf)
-    assert result == True
+    assert result
 
 
 @pytest.mark.asyncio
@@ -73,7 +73,7 @@ async def test_validator_accepts_includes():
     uf = _uf("requirements.txt",
              b"-r other.txt\nrequests==2.32.3\n", "text/plain")
     result = await validate_requirements_file(uf)
-    assert result == True
+    assert result
 
 
 @pytest.mark.asyncio

@@ -67,10 +67,8 @@ jobs:
           uv sync --all-extras --dev
       
       # Fast ruff setup
-      - uses: astral-sh/ruff-action@v3
-      
       - name: Lint with ruff
-        run: uv run ruff check .
+      - uses: astral-sh/ruff-action@v3
       
       - name: Run tests
         run: uv run pytest -q

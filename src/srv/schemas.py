@@ -1,7 +1,7 @@
 from uuid import uuid4
 from enum import Enum
 from pydantic import BaseModel, ConfigDict
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from typing import Optional
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import DateTime, SQLModel, Field, Column
