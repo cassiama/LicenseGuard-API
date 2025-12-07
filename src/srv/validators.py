@@ -13,34 +13,32 @@ async def validate_requirements_file(file: UploadFile) -> bool:
     if ct not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Upload a text/plain requirements.txt file."
+            detail="Upload a text/plain requirements.txt file.",
         )
     if not (file.filename and file.filename.lower().endswith(".txt")):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="File must have .txt extension."
+            detail="File must have .txt extension.",
         )
 
     # decode the raw text file (throws an error if the file can't be decoded)
     raw_text: bytes = await file.read()
     if not raw_text:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File is empty."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File is empty."
         )
     try:
         text = raw_text.decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Text file is malformed and cannot be decoded."
+            detail="Text file is malformed and cannot be decoded.",
         )
 
     # skip all directive-like lines that start with '-' (includes -r, -c, -f, etc.)
     # NOTE: we do this because some files that have these *are* valid, but requirements-parser thinks
     # they're not. we also do this in the parsing function, but it doesn't need an explanation there!
-    text = "\n".join(ln for ln in text.splitlines()
-                     if not ln.lstrip().startswith("-"))
+    text = "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("-"))
 
     # use requirements-parser to ensure the requirements can be parsed from the file
     try:
@@ -48,13 +46,13 @@ async def validate_requirements_file(file: UploadFile) -> bool:
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Invalid requirements.txt file."
+            detail="Invalid requirements.txt file.",
         )
 
     if not parsed_reqs:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="No requirements found."
+            detail="No requirements found.",
         )
 
     return True
@@ -65,20 +63,18 @@ async def parse_requirements_file(file: UploadFile) -> List[str]:
     raw_text: bytes = await file.read()
     if not raw_text:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File is empty."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File is empty."
         )
     try:
         text = raw_text.decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Text file is malformed and cannot be decoded."
+            detail="Text file is malformed and cannot be decoded.",
         )
 
     # skip all directive-like lines that start with '-' (includes -r, -c, -f, etc.)
-    text = "\n".join(ln for ln in text.splitlines()
-                     if not ln.lstrip().startswith("-"))
+    text = "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("-"))
 
     # next, use requirements-parser to get all of the requirements
     try:
@@ -86,7 +82,7 @@ async def parse_requirements_file(file: UploadFile) -> List[str]:
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Invalid requirements.txt file."
+            detail="Invalid requirements.txt file.",
         )
 
     # keep any requirements with a .name field
@@ -96,12 +92,15 @@ async def parse_requirements_file(file: UploadFile) -> List[str]:
             reqs.append(getattr(req, "line", str(req)).strip())
 
     # ignore all blank lines & comments
-    reqs = [ln for ln in (ln.strip() for ln in reqs)
-            if ln and not ln.lstrip().startswith("#")]
+    reqs = [
+        ln
+        for ln in (ln.strip() for ln in reqs)
+        if ln and not ln.lstrip().startswith("#")
+    ]
     if not reqs:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="No requirements found."
+            detail="No requirements found.",
         )
 
     return reqs

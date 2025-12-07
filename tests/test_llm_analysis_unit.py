@@ -14,10 +14,15 @@ async def test_get_llm_analysis_success(fake_llm):
         project_name=project_name,
         analysis_date=date.today(),
         files=[
-            DependencyReport(name="requests", version="2.32.3",
-                             license="Apache-2.0", confidence_score=0.8),
-            DependencyReport(name="fastapi", version="0.95.0",
-                             license="MIT", confidence_score=0.9),
+            DependencyReport(
+                name="requests",
+                version="2.32.3",
+                license="Apache-2.0",
+                confidence_score=0.8,
+            ),
+            DependencyReport(
+                name="fastapi", version="0.95.0", license="MIT", confidence_score=0.9
+            ),
         ],
     )
     fake_llm._return = expected_result

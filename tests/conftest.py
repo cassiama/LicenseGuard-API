@@ -32,14 +32,22 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 # NOTE: these imports MUST come after sys.path tweak, otherwise you won't be able to run the test suite
-from db.session import get_session
-from srv.schemas import Event, EventType, AnalysisResult, DependencyReport, User, UserPublic
-from srv.security import get_current_user
-from srv.app import app
+from db.session import get_session  # noqa: E402
+from srv.schemas import ( # noqa: E402
+    Event,
+    EventType,
+    AnalysisResult,
+    DependencyReport,
+    User,
+    UserPublic,
+)
+from srv.security import get_current_user  # noqa: E402
+from srv.app import app  # noqa: E402
 
 # regex taken from this source: https://regex101.com/r/wL7uN1/1
 HEX32 = re.compile(
-    r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{12}4[0-9a-f]{19}")
+    r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{12}4[0-9a-f]{19}"
+)
 # regex taken from this source: https://base64.guru/standards/base64url
 BASE64URL = re.compile(r"^[A-Za-z0-9_-]+$")
 
@@ -80,10 +88,13 @@ def post_file(client: TestClient):
         filename: str,
         data: bytes,
         content_type: str = "text/plain",
-        form: dict | None = None
+        form: dict | None = None,
     ):
         files = {"file": (filename, io.BytesIO(data), content_type)}
-        return client.post("/analyze", files=files, data=form or {"project_name": "untitled"})
+        return client.post(
+            "/analyze", files=files, data=form or {"project_name": "untitled"}
+        )
+
     return _post
 
 
@@ -112,8 +123,12 @@ class FakeLLM:
             "project_name": "Test Project",
             "analysis_date": date.today().isoformat(),
             "files": [
-                {"name": "requests", "version": "2.32.3",
-                 "license": "Apache-2.0", "confidence_score": 0.8}
+                {
+                    "name": "requests",
+                    "version": "2.32.3",
+                    "license": "Apache-2.0",
+                    "confidence_score": 0.8,
+                }
             ],
         }
 
@@ -202,7 +217,7 @@ async def client_with_seed(client: TestClient, session_override: AsyncSession):
         username="seeded",
         full_name="Seeded User",
         email="seeded@example.com",
-        hashed_password="secret"
+        hashed_password="secret",
     )
     session_override.add(user)
     await session_override.commit()
@@ -217,14 +232,14 @@ async def client_with_seed(client: TestClient, session_override: AsyncSession):
             project_name=project_name,
             event=EventType.PROJECT_CREATED,
             content="requests==2.28.1",
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(timezone.utc),
         ),
         Event(
             id=str(uuid4()),
             user_id=user_id,
             project_name=project_name,
             event=EventType.ANALYSIS_STARTED,
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(timezone.utc),
         ),
         Event(
             id=str(uuid4()),
@@ -239,15 +254,15 @@ async def client_with_seed(client: TestClient, session_override: AsyncSession):
                         name="requests",
                         version="2.28.1",
                         license="Apache-2.0",
-                        confidence_score=1.0
+                        confidence_score=1.0,
                     )
                 ],
             ).model_dump_json(),
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(timezone.utc),
         ),
     ]
 
     session_override.add_all(seed_events)
     await session_override.commit()
 
-    yield client    # re-use the existing TestClient, don't create another
+    yield client  # re-use the existing TestClient, don't create another

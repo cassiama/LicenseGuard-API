@@ -4,13 +4,21 @@ from email.utils import format_datetime
 from uuid import uuid4
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.config import get_settings
 from services.events import add_event
 from db.session import get_session, init_engine, close_engine
-from .schemas import AnalyzeResponse, AnalysisResult, Event, EventType, Status, UserPublic
+from .schemas import (
+    AnalyzeResponse,
+    AnalysisResult,
+    Event,
+    EventType,
+    Status,
+    UserPublic,
+)
 from .routers import llm as llm_router, status as status_router, users as users_router
 from .validators import parse_requirements_file, validate_requirements_file
 from .security import get_current_user
@@ -39,12 +47,24 @@ async def lifespan(app):
     finally:
         await close_engine()
 
+
 app = FastAPI(lifespan=lifespan)
 app.include_router(users_router.router)
 # all routes from this router are deprecated as of v0.2.0
 app.include_router(llm_router.router)
 # all routes from this router are deprecated as of v0.3.0
 app.include_router(status_router.router)
+
+
+# allows the frontend to make requests to this REST API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    # TODO: for production, change to be specifically the frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # LLM / OpenAI definitions
 llm = ChatOpenAI(
@@ -70,12 +90,12 @@ FEW_SHOT = (
     "flask_socketio==5.5.1\n"
     "# Classifiers indicate MIT specifically\n\n"
     "Output item (since perfect Trove exists):\n"
-    "{\"name\":\"flask_socketio\",\"version\":\"5.5.1\",\"license\":\"License :: OSI Approved :: MIT License\",\"confidence_score\":1.0}\n"
+    '{"name":"flask_socketio","version":"5.5.1","license":"License :: OSI Approved :: MIT License","confidence_score":1.0}\n'
     "Input pkgs:\n"
     "urllib3==2.2.2\n"
     "# SPDX clearly says MIT; Trove may be generic or missing\n\n"
     "Output item (no perfect Trove known):\n"
-    "{\"name\":\"urllib3\",\"version\":\"2.2.2\",\"license\":\"MIT\",\"confidence_score\":0.7}\n"
+    '{"name":"urllib3","version":"2.2.2","license":"MIT","confidence_score":0.7}\n'
 )
 
 
@@ -89,15 +109,14 @@ async def root() -> None:
             # this is an emerging standard. expects either "true" or a HTTP-date timestamp
             "Deprecation": format_datetime(DEPRECATION_DATE, usegmt=True),
             # this returns a HTTP-date timestamp, which is expected according to RFC 8594 (source: https://datatracker.ietf.org/doc/html/rfc8594)
-            "Sunset": format_datetime(SUNSET_DATE, usegmt=True)
-        }
+            "Sunset": format_datetime(SUNSET_DATE, usegmt=True),
+        },
     )
 
 
 # helper function that calls a OpenAI LLM to analyze dependencies and returns a structured output
 async def get_llm_analysis(
-    project_name: str,
-    reqs: list[str]
+    project_name: str, reqs: list[str]
 ) -> Optional[AnalysisResult]:
     """
     Runs in a FastAPI BackgroundTask. Calls the LLM via LangChain with structured output. Returns the `AnalysisResult`. On error, returns `None`.
@@ -107,25 +126,27 @@ async def get_llm_analysis(
         structured_llm = llm.with_structured_output(AnalysisResult)
 
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT.format(
-                today=date.today().isoformat())),
-            HumanMessage(content=(
-                f"{FEW_SHOT}\n\n"
-                "Here are the packages from requirements.txt (one per line). "
-                "Remember the single-field rule for `license`:\n\n"
-                f"{"\n".join(reqs)}\n\n"
-                f"Use this exact project name: {project_name} "
-                "(you may infer 'untitled' if none provided) "
-                "and set analysis_date to today's date. "
-            ))
+            SystemMessage(content=SYSTEM_PROMPT.format(today=date.today().isoformat())),
+            HumanMessage(
+                content=(
+                    f"{FEW_SHOT}\n\n"
+                    "Here are the packages from requirements.txt (one per line). "
+                    "Remember the single-field rule for `license`:\n\n"
+                    f"{'\n'.join(reqs)}\n\n"
+                    f"Use this exact project name: {project_name} "
+                    "(you may infer 'untitled' if none provided) "
+                    "and set analysis_date to today's date. "
+                )
+            ),
         ]
 
-        result: AnalysisResult = AnalysisResult.model_validate(await structured_llm.ainvoke(messages))
+        result: AnalysisResult = AnalysisResult.model_validate(
+            await structured_llm.ainvoke(messages)
+        )
         return result
 
     except Exception as e:
-        print(
-            f"[{datetime.now()}] get_llm_analysis failed for {project_name}: {e}")
+        print(f"[{datetime.now()}] get_llm_analysis failed for {project_name}: {e}")
         return None
 
 
@@ -135,10 +156,10 @@ async def get_llm_analysis(
     status_code=status.HTTP_200_OK,
 )
 async def analyze_dependencies(
-    file: Annotated[UploadFile, File(
-        description="A requirements.txt file (text/plain).")],
-    project_name: Annotated[str, Form(
-        description="The name of the project")],
+    file: Annotated[
+        UploadFile, File(description="A requirements.txt file (text/plain).")
+    ],
+    project_name: Annotated[str, Form(description="The name of the project")],
     user: Annotated[UserPublic, Depends(get_current_user)],
     session: AsyncSession = Depends(get_session),
 ) -> AnalyzeResponse:
@@ -167,7 +188,7 @@ async def analyze_dependencies(
     if len(project_name) < 1 or len(project_name) > 100:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Project name must be between 1 and 100 characters."
+            detail="Project name must be between 1 and 100 characters.",
         )
 
     # log event (project creation) in the database
@@ -179,8 +200,9 @@ async def analyze_dependencies(
             project_name=project_name,
             event=EventType.PROJECT_CREATED,
             content=requirements_content,
-            timestamp=datetime.now(timezone.utc)
-        ))
+            timestamp=datetime.now(timezone.utc),
+        ),
+    )
 
     # always make sure to reset the file pointer after reading!
     await file.seek(0)
@@ -194,8 +216,8 @@ async def analyze_dependencies(
                 user_id=user.id,
                 project_name=project_name,
                 event=EventType.VALIDATION_FAILED,
-                timestamp=datetime.now(timezone.utc)
-            )
+                timestamp=datetime.now(timezone.utc),
+            ),
         )
         raise e
 
@@ -210,8 +232,8 @@ async def analyze_dependencies(
             project_name=project_name,
             event=EventType.VALIDATION_SUCCESS,
             content=", ".join(_reqs),
-            timestamp=datetime.now(timezone.utc)
-        )
+            timestamp=datetime.now(timezone.utc),
+        ),
     )
 
     # log event (analysis started) in the database
@@ -221,8 +243,8 @@ async def analyze_dependencies(
             user_id=user.id,
             project_name=project_name,
             event=EventType.ANALYSIS_STARTED,
-            timestamp=datetime.now(timezone.utc)
-        )
+            timestamp=datetime.now(timezone.utc),
+        ),
     )
     # retrieve the analysis from the LLM
     project_id = str(uuid4())
@@ -234,13 +256,15 @@ async def analyze_dependencies(
         Event(
             user_id=user.id,
             project_name=project_name,
-            event=EventType.ANALYSIS_COMPLETED if llm_result else EventType.ANALYSIS_FAILED,
+            event=EventType.ANALYSIS_COMPLETED
+            if llm_result
+            else EventType.ANALYSIS_FAILED,
             content=llm_result.model_dump_json() if llm_result else None,
-            timestamp=datetime.now(timezone.utc)
-        )
+            timestamp=datetime.now(timezone.utc),
+        ),
     )
     return AnalyzeResponse(
         project_id=project_id,
         status=Status.COMPLETED if llm_result else Status.FAILED,
-        result=llm_result
+        result=llm_result,
     )

@@ -1,4 +1,4 @@
-name: CI (tests only)
+name: API CI
 
 on:
   push:
@@ -56,11 +56,18 @@ jobs:
           done
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
+      
       # Fast Python setup with uv
       - uses: astral-sh/setup-uv@v6
-      - run: uv python install
-      - run: uv venv && uv sync --all-extras --dev
-
+      
+      - name: Install dependencies
+        run: |
+          uv python install
+          uv venv
+          uv sync --all-extras --dev
+      
+      # Fast ruff setup
+      - uses: astral-sh/ruff-action@v3
+      
       - name: Run tests
         run: uv run pytest -q

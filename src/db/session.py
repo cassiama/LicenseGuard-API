@@ -18,26 +18,27 @@ settings = get_settings()
 DB_URL = str(settings.db_url) if settings.db_url else ""
 if not any([DB_URL.startswith(conn_prefix) for conn_prefix in ALLOWED_CONN_PREFIXES]):
     raise RuntimeError(
-        "Please provide an async DB connection URL (e.g. postgresql+asyncpg://user:pw@host:5432/dbname) for DB_URL.")
+        "Please provide an async DB connection URL (e.g. postgresql+asyncpg://user:pw@host:5432/dbname) for DB_URL."
+    )
 
 # create the engine and local session
 engine: Optional[AsyncEngine] = None
 AsyncSessionLocal: Optional[async_sessionmaker] = None
 
 
-async def init_engine(db_url: str, max_retries: int = 10, retry_delay: float = 1.0) -> None:
+async def init_engine(
+    db_url: str, max_retries: int = 10, retry_delay: float = 1.0
+) -> None:
     # we gotta modify the pre-existing SQLAlchemy engine & async session
     global engine, AsyncSessionLocal
     # just exit if the engine has already been initialized
     if engine:
         return
 
-    engine = create_async_engine(
-        db_url,
-        pool_pre_ping=True
-    )
+    engine = create_async_engine(db_url, pool_pre_ping=True)
     AsyncSessionLocal = async_sessionmaker(
-        engine, expire_on_commit=False, class_=AsyncSession)
+        engine, expire_on_commit=False, class_=AsyncSession
+    )
 
     # try to acquire a connection to the database in order to create all of the tables
     last_exc = None
@@ -52,11 +53,12 @@ async def init_engine(db_url: str, max_retries: int = 10, retry_delay: float = 1
 
     # if we didn't return, then we failed to connect with the database
     raise RuntimeError(
-        f"Unable to connect with the database after {max_retries} tries: {last_exc}")
+        f"Unable to connect with the database after {max_retries} tries: {last_exc}"
+    )
 
 
 async def close_engine() -> None:
-    global engine   # we gotta modify the pre-existing SQLAlchemy engine
+    global engine  # we gotta modify the pre-existing SQLAlchemy engine
     if engine:
         await engine.dispose()
         engine = None
@@ -68,6 +70,7 @@ async def get_session() -> AsyncGenerator[Any, Any]:
     # been called when the app started up
     if not AsyncSessionLocal:
         raise RuntimeError(
-            "The SQLAlchemy engine hasn't been initialized. You must call `init_engine` on app startup.")
+            "The SQLAlchemy engine hasn't been initialized. You must call `init_engine` on app startup."
+        )
     async with AsyncSessionLocal() as session:
         yield session

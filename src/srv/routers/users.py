@@ -12,14 +12,9 @@ router = APIRouter(
 )
 
 
-@router.post(
-    "/",
-    response_model=UserPublic,
-    status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
 async def register_user(
-    user_in: UserCreate,
-    session: AsyncSession = Depends(get_session)
+    user_in: UserCreate, session: AsyncSession = Depends(get_session)
 ) -> UserPublic:
     """
     Creates and returns a new user. This new user will be saved into the internal database.
@@ -37,29 +32,28 @@ async def register_user(
     if len(user_in.username) < 4 or len(user_in.username) > 100:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Username must be between 4 and 100 characters."
+            detail="Username must be between 4 and 100 characters.",
         )
     if len(user_in.password) < 4:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Password must be at least 4 characters."
+            detail="Password must be at least 4 characters.",
         )
 
     db_user = await get_user(session, username=user_in.username)
     if db_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this username is already registered.")
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with this username is already registered.",
+        )
     user = await create_user(session, user=user_in)
     return user
 
 
-@router.post(
-    "/token",
-    response_model=Token
-)
+@router.post("/token", response_model=Token)
 async def get_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ):
     """
     Takes in the `username` and `password` from the OAuth2 form data. Logs the user in and returns an access token (JWT).
@@ -77,17 +71,13 @@ async def get_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(
-        {"sub": user.username}, expires_delta=None)
-    return {"access_token": access_token, "token_type": "bearer"}
+    access_token = create_access_token({"sub": user.username}, expires_delta=None)
+    return Token(access_token=access_token, token_type="bearer")
 
 
-@router.get(
-    "/me",
-    response_model=UserPublic
-)
+@router.get("/me", response_model=UserPublic)
 async def read_users_me(
-    current_user: UserPublic = Depends(get_current_user)
+    current_user: UserPublic = Depends(get_current_user),
 ) -> UserPublic:
     """
     Returns the current authenticated user's details.

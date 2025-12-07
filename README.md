@@ -22,7 +22,7 @@ In short:
 - have Docker Desktop/Engine installed on your local machine
 - access to a SQL Database
 - have an OpenAI API key
-- environment variables for generating JWTs and storing the database's URL
+- environment variables for storing the database's URL
 
 ---
 
@@ -42,9 +42,12 @@ Optionally, for the sake of reproducibility, you can also provide the following 
 
 - `JWT_SECRET_KEY`: a random 32-character hexadecimal string. It should look like this: `9f0255336305508b8718929ddfbd01669d892e2c52109958f647a3758d5dc2ea`
 - `JWT_ALGORITHM`: a string corresponding to [one of the JWT algorithms](https://datatracker.ietf.org/doc/html/rfc7518#section-3)
-- `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`: an integer
+- `USER_ACCESS_TOKEN_EXPIRE_MINUTES`: an integer
 
-If you don't, then the server will default to "HS256" for the algorithm and 30 minutes for the expiration.
+If you don't, then the server will default to the following:
+
+- "HS256" for the algorithm
+- 30 minutes for the expiration of user JWTs
 
 ### Usage
 
@@ -166,11 +169,11 @@ For the latest image of the API on Docker Hub, you can access the following rout
     }
     ```
 
-- `GET /users/token`: Takes in the `username` and `password` from the OAuth2 form data. Logs the user in and returns an access token (JWT).
+- `POST /users/token`: Takes in the `username` and `password` from the OAuth2 form data. Logs the user in and returns an access token (JWT).
   
   - Sample Response:
     - Headers:
-      - `Content-Type: application/x-www-form-urlencoded"`
+      - `Content-Type: application/x-www-form-urlencoded`
     - Data Inputs:
       - the username for the user
       - the password for the user
@@ -179,7 +182,7 @@ For the latest image of the API on Docker Hub, you can access the following rout
   
   ```json
     {
-      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMj M0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaXNTb2NpYWwiOnRydWV9. 4pcPyMD09olPSyXnrXCjTwXyr4BsezdI1AVTmud2fU4",
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaXNTb2NpYWwiOnRydWV9.4pcPyMD09olPSyXnrXCjTwXyr4BsezdI1AVTmud2fU4",
       "token_type": "bearer"
     }
   ```

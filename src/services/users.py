@@ -16,7 +16,9 @@ async def get_user(session: AsyncSession, username: str) -> Optional[UserPublic]
     return None
 
 
-async def authenticate_user(session: AsyncSession, username: str, password: str) -> Optional[UserPublic]:
+async def authenticate_user(
+    session: AsyncSession, username: str, password: str
+) -> Optional[UserPublic]:
     """
     Given a `username` and `password` associated with a valid user, this will return a `UserPublic`. Otherwise, it will return `None`.
     """
@@ -47,10 +49,7 @@ async def create_user(session: AsyncSession, user: UserCreate) -> UserPublic:
         raise ValueError("A user with this username is already registered.")
 
     hashed_pwd = get_hashed_pwd(user.password)
-    user_in_db = User(
-        **user.model_dump(),
-        hashed_password=hashed_pwd
-    )
+    user_in_db = User(**user.model_dump(), hashed_password=hashed_pwd)
 
     # use the database layer to save the user
     await save_user(session, user_in_db)

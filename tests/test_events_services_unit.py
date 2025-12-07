@@ -16,8 +16,8 @@ async def test_event_add_and_filter(session_override):
             user_id=u1_id,
             project_name="p1",
             event=EventType.PROJECT_CREATED,
-            timestamp=datetime.now(timezone.utc)
-        )
+            timestamp=datetime.now(timezone.utc),
+        ),
     )
     await add_event(
         session_override,
@@ -25,8 +25,8 @@ async def test_event_add_and_filter(session_override):
             user_id=u1_id,
             project_name="p2",
             event=EventType.PROJECT_CREATED,
-            timestamp=datetime.now(timezone.utc)
-        )
+            timestamp=datetime.now(timezone.utc),
+        ),
     )
     events = await list_events(session_override, u1_id, "p1")
     assert len(events) == 1

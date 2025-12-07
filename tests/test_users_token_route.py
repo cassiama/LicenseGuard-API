@@ -9,7 +9,7 @@ def test_check_response_format(monkeypatch, client_with_seed):
     # NOTE: we say "services.users.verify_pwd" instead of "srv.security.verify_pwd"
     # here because "services.users" IMPORTS `verify_pwd()`, becoming "a part of" its
     # list of functions that we can call.
-    # To put this simply: if we DON'T do this, then it'll call the version of `verify_pwd()` 
+    # To put this simply: if we DON'T do this, then it'll call the version of `verify_pwd()`
     # from the "security" package and NOT our mocked version!
     # source: https://stackoverflow.com/a/64161240
     monkeypatch.setattr("services.users.verify_pwd", lambda x, y: x == y)
@@ -28,7 +28,7 @@ def test_success_with_valid_credentials(monkeypatch, client_with_seed):
     # NOTE: we say "services.users.verify_pwd" instead of "srv.security.verify_pwd"
     # here because "services.users" IMPORTS `verify_pwd()`, becoming "a part of" its
     # list of functions that we can call.
-    # To put this simply: if we DON'T do this, then it'll call the version of `verify_pwd()` 
+    # To put this simply: if we DON'T do this, then it'll call the version of `verify_pwd()`
     # from the "security" package and NOT our mocked version!
     # source: https://stackoverflow.com/a/64161240
     monkeypatch.setattr("services.users.verify_pwd", lambda x, y: x == y)
@@ -40,7 +40,7 @@ def test_success_with_valid_credentials(monkeypatch, client_with_seed):
 
     assert body["token_type"] == "bearer"
     # all valid JWTs are 3 Base64URL strings separated by dots
-    assert token.count(".") == 2    # 3 Base64URL strings = 2 dots
+    assert token.count(".") == 2  # 3 Base64URL strings = 2 dots
     for b64 in token.split("."):
         assert BASE64URL.match(b64)
 

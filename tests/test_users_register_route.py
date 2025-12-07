@@ -1,6 +1,4 @@
-import copy
-import pytest
-from fastapi import HTTPException, status
+from fastapi import status
 from conftest import HEX32
 
 
@@ -68,6 +66,7 @@ def test_create_user_rejects_username_too_short(client_with_seed):
 
 def test_create_user_rejects_username_too_long(client_with_seed):
     r = client_with_seed.post(
-        "/users/", json={"username": "a" * 101, "password": "test"})
+        "/users/", json={"username": "a" * 101, "password": "test"}
+    )
     assert r.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "string should have at most 100 characters" in r.text.lower()

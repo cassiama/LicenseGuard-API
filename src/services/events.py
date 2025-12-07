@@ -10,7 +10,9 @@ async def add_event(session: AsyncSession, event: Event) -> None:
     await upsert_event(session, event)
 
 
-async def list_events(session: AsyncSession, user_id: str, project_name: str) -> list[Event]:
+async def list_events(
+    session: AsyncSession, user_id: str, project_name: str
+) -> list[Event]:
     """
     Given a `user_id` and a valid `project_name`, this will return a list of `Event`s stored in the database.
     """

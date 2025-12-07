@@ -17,9 +17,7 @@ class LlmPrompt(BaseModel):
 
 
 @router.post("/guess", deprecated=True)
-async def chat(
-    body: LlmPrompt
-) -> None:
+async def chat(body: LlmPrompt) -> None:
     """
     NOTE: This route has been deprecated as of v0.3.0.
 
@@ -36,6 +34,6 @@ async def chat(
             # this is an emerging standard. expects either "true" or a HTTP-date timestamp
             "Deprecation": format_datetime(DEPRECATION_DATE, usegmt=True),
             # this returns a HTTP-date timestamp, which is expected according to RFC 8594 (source: https://datatracker.ietf.org/doc/html/rfc8594)
-            "Sunset": format_datetime(SUNSET_DATE, usegmt=True)
-        }
+            "Sunset": format_datetime(SUNSET_DATE, usegmt=True),
+        },
     )

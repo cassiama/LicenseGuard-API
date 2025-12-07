@@ -32,14 +32,14 @@ def test_accepts_valid_requirements_txt_minimal(post_file):
     assert HEX32.match(body["project_id"])
     assert body["status"] == "completed"
     assert "project_name" in body["result"] and isinstance(
-        body["result"]["project_name"], str)
+        body["result"]["project_name"], str
+    )
     assert "analysis_date" in body["result"] and isinstance(
-        body["result"]["analysis_date"], str)
-    assert "files" in body["result"] and isinstance(
-        body["result"]["files"], list)
+        body["result"]["analysis_date"], str
+    )
+    assert "files" in body["result"] and isinstance(body["result"]["files"], list)
     f = body["result"]["files"][0]
-    assert set(f.keys()) >= {"name", "version",
-                             "license", "confidence_score"}
+    assert set(f.keys()) >= {"name", "version", "license", "confidence_score"}
 
 
 def test_rejects_non_string_project_name(post_file):
@@ -101,26 +101,21 @@ def test_llm_failure_handling(post_file, fake_llm):
 
 def test_accepts_valid_requirements_txt_unicode(post_file):
     """Tests that Unicode content in requirements.txt file is handled correctly."""
-    content = "# コメント\nscikit-learn==1.7.1\n# más comentarios\n".encode(
-        "utf-8")
-    r = post_file(
-        "requirements.txt",
-        content,
-        "text/plain"
-    )
+    content = "# コメント\nscikit-learn==1.7.1\n# más comentarios\n".encode("utf-8")
+    r = post_file("requirements.txt", content, "text/plain")
     assert r.status_code == 200, r.text
     body = r.json()
     assert HEX32.match(body["project_id"])
     assert body["status"] == "completed"
     assert "project_name" in body["result"] and isinstance(
-        body["result"]["project_name"], str)
+        body["result"]["project_name"], str
+    )
     assert "analysis_date" in body["result"] and isinstance(
-        body["result"]["analysis_date"], str)
-    assert "files" in body["result"] and isinstance(
-        body["result"]["files"], list)
+        body["result"]["analysis_date"], str
+    )
+    assert "files" in body["result"] and isinstance(body["result"]["files"], list)
     f = body["result"]["files"][0]
-    assert set(f.keys()) >= {"name", "version",
-                             "license", "confidence_score"}
+    assert set(f.keys()) >= {"name", "version", "license", "confidence_score"}
 
 
 def test_accepts_valid_requirements_txt_complex(post_file):
@@ -140,21 +135,21 @@ def test_accepts_valid_requirements_txt_complex(post_file):
         # Optional extras
         uvicorn[standard]>=0.20.0; python_version >= "3.8"
         """,
-        "text/plain"
+        "text/plain",
     )
     assert r.status_code == 200, r.text
     body = r.json()
     assert HEX32.match(body["project_id"])
     assert body["status"] == "completed"
     assert "project_name" in body["result"] and isinstance(
-        body["result"]["project_name"], str)
+        body["result"]["project_name"], str
+    )
     assert "analysis_date" in body["result"] and isinstance(
-        body["result"]["analysis_date"], str)
-    assert "files" in body["result"] and isinstance(
-        body["result"]["files"], list)
+        body["result"]["analysis_date"], str
+    )
+    assert "files" in body["result"] and isinstance(body["result"]["files"], list)
     f = body["result"]["files"][0]
-    assert set(f.keys()) >= {"name", "version",
-                             "license", "confidence_score"}
+    assert set(f.keys()) >= {"name", "version", "license", "confidence_score"}
 
 
 def test_accepts_valid_with_charset_param_on_content_type(post_file):
@@ -169,14 +164,14 @@ def test_accepts_valid_with_charset_param_on_content_type(post_file):
     assert HEX32.match(body["project_id"])
     assert body["status"] == "completed"
     assert "project_name" in body["result"] and isinstance(
-        body["result"]["project_name"], str)
+        body["result"]["project_name"], str
+    )
     assert "analysis_date" in body["result"] and isinstance(
-        body["result"]["analysis_date"], str)
-    assert "files" in body["result"] and isinstance(
-        body["result"]["files"], list)
+        body["result"]["analysis_date"], str
+    )
+    assert "files" in body["result"] and isinstance(body["result"]["files"], list)
     f = body["result"]["files"][0]
-    assert set(f.keys()) >= {"name", "version",
-                             "license", "confidence_score"}
+    assert set(f.keys()) >= {"name", "version", "license", "confidence_score"}
 
 
 def test_accepts_valid_with_project_name_form_field(post_file):
@@ -193,14 +188,14 @@ def test_accepts_valid_with_project_name_form_field(post_file):
     assert HEX32.match(body["project_id"])
     assert body["status"] == "completed"
     assert "project_name" in body["result"] and isinstance(
-        body["result"]["project_name"], str)
+        body["result"]["project_name"], str
+    )
     assert "analysis_date" in body["result"] and isinstance(
-        body["result"]["analysis_date"], str)
-    assert "files" in body["result"] and isinstance(
-        body["result"]["files"], list)
+        body["result"]["analysis_date"], str
+    )
+    assert "files" in body["result"] and isinstance(body["result"]["files"], list)
     f = body["result"]["files"][0]
-    assert set(f.keys()) >= {"name", "version",
-                             "license", "confidence_score"}
+    assert set(f.keys()) >= {"name", "version", "license", "confidence_score"}
 
 
 def test_accepts_file_with_editable_and_named_entries(post_file):
@@ -209,21 +204,21 @@ def test_accepts_file_with_editable_and_named_entries(post_file):
         "requirements.txt",
         # -e (editable) lines are skipped while named entries are kept
         b"-e .[all]\nfastapi>=0.110\n",
-        "text/plain"
+        "text/plain",
     )
     assert r.status_code == 200, r.text
     body = r.json()
     assert HEX32.match(body["project_id"])
     assert body["status"] == "completed"
     assert "project_name" in body["result"] and isinstance(
-        body["result"]["project_name"], str)
+        body["result"]["project_name"], str
+    )
     assert "analysis_date" in body["result"] and isinstance(
-        body["result"]["analysis_date"], str)
-    assert "files" in body["result"] and isinstance(
-        body["result"]["files"], list)
+        body["result"]["analysis_date"], str
+    )
+    assert "files" in body["result"] and isinstance(body["result"]["files"], list)
     f = body["result"]["files"][0]
-    assert set(f.keys()) >= {"name", "version",
-                             "license", "confidence_score"}
+    assert set(f.keys()) >= {"name", "version", "license", "confidence_score"}
 
 
 def test_accepts_file_with_include_and_named_entries(post_file):
@@ -232,21 +227,21 @@ def test_accepts_file_with_include_and_named_entries(post_file):
         "requirements.txt",
         # -r (include) lines are skipped while named entries are kept
         b"-r requirements-dev.txt\nrequests==2.32.3\n",
-        "text/plain"
+        "text/plain",
     )
     assert r.status_code == 200, r.text
     body = r.json()
     assert HEX32.match(body["project_id"])
     assert body["status"] == "completed"
     assert "project_name" in body["result"] and isinstance(
-        body["result"]["project_name"], str)
+        body["result"]["project_name"], str
+    )
     assert "analysis_date" in body["result"] and isinstance(
-        body["result"]["analysis_date"], str)
-    assert "files" in body["result"] and isinstance(
-        body["result"]["files"], list)
+        body["result"]["analysis_date"], str
+    )
+    assert "files" in body["result"] and isinstance(body["result"]["files"], list)
     f = body["result"]["files"][0]
-    assert set(f.keys()) >= {"name", "version",
-                             "license", "confidence_score"}
+    assert set(f.keys()) >= {"name", "version", "license", "confidence_score"}
 
 
 def test_accepts_pep508_direct_url_line(post_file):
@@ -255,21 +250,21 @@ def test_accepts_pep508_direct_url_line(post_file):
         "requirements.txt",
         # 'name @ URL' is valid PEP 508 and should pass through
         b"urllib3 @ https://github.com/urllib3/urllib3/archive/refs/tags/1.26.8.zip\n",
-        "text/plain"
+        "text/plain",
     )
     assert r.status_code == 200, r.text
     body = r.json()
     assert HEX32.match(body["project_id"])
     assert body["status"] == "completed"
     assert "project_name" in body["result"] and isinstance(
-        body["result"]["project_name"], str)
+        body["result"]["project_name"], str
+    )
     assert "analysis_date" in body["result"] and isinstance(
-        body["result"]["analysis_date"], str)
-    assert "files" in body["result"] and isinstance(
-        body["result"]["files"], list)
+        body["result"]["analysis_date"], str
+    )
+    assert "files" in body["result"] and isinstance(body["result"]["files"], list)
     f = body["result"]["files"][0]
-    assert set(f.keys()) >= {"name", "version",
-                             "license", "confidence_score"}
+    assert set(f.keys()) >= {"name", "version", "license", "confidence_score"}
 
 
 def test_rejects_wrong_media_type_even_if_txt_extension(post_file):
@@ -287,9 +282,9 @@ def test_rejects_wrong_extension_even_if_media_type_ok(post_file):
     """Tests that a wrong file extension results in a 422 error, even if the content type is correct."""
     # NOTE: this test is necessary because a client could lie about the extension even if the MIME type is correct
     r = post_file(
-        "image.png",    # wrong file extension
+        "image.png",  # wrong file extension
         b"requests==2.32.3\n",
-        "text/plain"
+        "text/plain",
     )
     assert r.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "file must have .txt extension" in r.text.lower()
@@ -315,7 +310,7 @@ def test_rejects_invalid_requirement_lines_single(post_file):
     r = post_file(
         "requirements.txt",
         b"this is not valid!!!\n",  # a completely invalid line triggers a HTTP 422
-        "text/plain"
+        "text/plain",
     )
     assert r.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "invalid requirements.txt file" in r.text.lower()
@@ -329,8 +324,8 @@ def test_rejects_invalid_requirement_lines_mixed_list(post_file):
         requests==2.32.3
         invalid line !!!
         fastapi >= 0.110
-        """,    # a mix of valid & invalid lines typically triggers a HTTP 422 from the parser
-        "text/plain"
+        """,  # a mix of valid & invalid lines typically triggers a HTTP 422 from the parser
+        "text/plain",
     )
     assert r.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "invalid requirements.txt file" in r.text.lower()
