@@ -19,3 +19,6 @@ __pycache__/
 
 # SQLite files
 *.db*
+
+# Misc.
+.ruff_cache/
