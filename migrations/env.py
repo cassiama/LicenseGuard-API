@@ -34,6 +34,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from srv.schemas import SQLModel  # noqa: E402
+
 target_metadata = SQLModel.metadata
 
 # Set up our naming conventions so that they're consistent across dialects

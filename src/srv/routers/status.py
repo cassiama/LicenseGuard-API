@@ -9,15 +9,10 @@ SUNSET_DATE = datetime(2025, 9, 21, 23, 59, 59, tzinfo=timezone.utc)
 
 router = APIRouter(prefix="/status", tags=["status"])
 
+
 # this route has been deprecated as of v0.3.0
-@router.get(
-    "/{project_id}",
-    status_code=status.HTTP_410_GONE,
-    deprecated=True
-)
-async def get_progress(
-    project_id: str
-) -> None:
+@router.get("/{project_id}", status_code=status.HTTP_410_GONE, deprecated=True)
+async def get_progress(project_id: str) -> None:
     """
     NOTE: This route has been deprecated as of v0.3.0.
 
@@ -34,6 +29,6 @@ async def get_progress(
             # this is an emerging standard. expects either "true" or a HTTP-date timestamp
             "Deprecation": format_datetime(DEPRECATION_DATE, usegmt=True),
             # this returns a HTTP-date timestamp, which is expected according to RFC 8594 (source: https://datatracker.ietf.org/doc/html/rfc8594)
-            "Sunset": format_datetime(SUNSET_DATE, usegmt=True)
-        }
+            "Sunset": format_datetime(SUNSET_DATE, usegmt=True),
+        },
     )

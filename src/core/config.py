@@ -8,8 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=ROOT / ".env", env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(env_file=ROOT / ".env", env_file_encoding="utf-8")
 
     openai_api_key: SecretStr | None = None
     jwt_secret_key: SecretStr = SecretStr(token_hex(16))

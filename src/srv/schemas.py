@@ -30,16 +30,19 @@ class UserCreate(UserBase):  # to be used for creating an user in the DB
     password: str = Field(min_length=4)
 
 
-class User(UserBase, table=True):   # to be used when the user is stored in the DB
-    id: str = Field(default_factory=lambda: str(uuid4()),
-                     description="User ID (str hex)", primary_key=True)
+class User(UserBase, table=True):  # to be used when the user is stored in the DB
+    id: str = Field(
+        default_factory=lambda: str(uuid4()),
+        description="User ID (str hex)",
+        primary_key=True,
+    )
     hashed_password: str
 
 
 # to be returned to the client (NOTE: should NEVER include password)
 class UserPublic(UserBase):
     id: str
-    
+
     # this allows the model to be created from ORM objects (like SQLAlchemy)
     class ConfigDict:
         from_attributes = True
@@ -51,11 +54,11 @@ class UserPublic(UserBase):
                     "id": "37506042c060455783c5841f733d7449",
                     "username": "johndoe",
                     "full_name": "John Doe",
-                    "email": "johndoe@example.org"
+                    "email": "johndoe@example.org",
                 }
             ]
         }
-    } # type: ignore
+    }  # type: ignore
 
 
 # for analysis results:
@@ -67,26 +70,31 @@ class Status(str, Enum):
 
 class Project(BaseModel):
     """Represents a single analysis project."""
+
     model_config = ConfigDict(from_attributes=True)
 
-    id: str = Field(default_factory=lambda: str(uuid4()),
-                     description="Project ID (str hex)")
+    id: str = Field(
+        default_factory=lambda: str(uuid4()), description="Project ID (str hex)"
+    )
     name: str = Field(min_length=1, max_length=100)
 
 
 class DependencyReport(BaseModel):
     """AI agent output for a single project dependency."""
+
     name: str = Field(min_length=2, max_length=200)
     version: str = Field(min_length=1, max_length=80)
     # all licenses must come from the SPDX database
     license: str = Field(min_length=2, max_length=100)
     confidence_score: float = Field(
-        ge=0.0, le=1.0, description="Ranges from 0.0 to 1.0 (inclusive)")
+        ge=0.0, le=1.0, description="Ranges from 0.0 to 1.0 (inclusive)"
+    )
 
 
 # OpenAI / LLM schemas
 class AnalysisResult(BaseModel):
     """Top-level AI agent output (per-file results)."""
+
     project_name: str
     analysis_date: date
     files: list[DependencyReport]
@@ -97,6 +105,7 @@ class AnalyzeResponse(BaseModel):
     """
     POST /analyze response. Status will be "IN_PROGRESS" when there's no result yet, or "FAILED"/"COMPLETED" when there's a result.
     """
+
     project_id: str
     status: Status
     result: Optional[AnalysisResult] = None
@@ -115,23 +124,23 @@ class AnalyzeResponse(BaseModel):
                                 "confidence_score": 0.8,
                                 "license": "BSD-3-Clause",
                                 "name": "contourpy",
-                                "version": "1.3.1"
+                                "version": "1.3.1",
                             },
                             {
                                 "confidence_score": 0.8,
                                 "license": "BSD-3-Clause",
                                 "name": "contourpy",
-                                "version": "1.3.1"
-                            }
+                                "version": "1.3.1",
+                            },
                         ],
-                        "project_name": "MyCoolCompleteProject"
-                    }
+                        "project_name": "MyCoolCompleteProject",
+                    },
                 },
                 {
                     "id": "8fd82d6c911d49329d3802fbadeace22",
                     "status": "failed",
-                    "result": None
-                }
+                    "result": None,
+                },
             ]
         }
     }
@@ -141,6 +150,7 @@ class AnalyzeResponse(BaseModel):
 # DB persistence records
 class EventType(str, Enum):
     """Enumeration for the types of events that can be logged."""
+
     PROJECT_CREATED = "PROJECT_CREATED"
     VALIDATION_FAILED = "DEPENDENCY_VALIDATION_FAILED"
     VALIDATION_SUCCESS = "DEPENDENCY_VALIDATION_SUCCESS"
@@ -153,17 +163,25 @@ class Event(SQLModel, table=True):
     """
     Represents a single event log in the database.
     """
-    id: str = Field(default_factory=lambda: str(uuid4()),
-                     description="ID of the event", primary_key=True)
+
+    id: str = Field(
+        default_factory=lambda: str(uuid4()),
+        description="ID of the event",
+        primary_key=True,
+    )
     user_id: str = Field(
-        description="ID of the user who initiated the event", foreign_key="user.id")
+        description="ID of the user who initiated the event", foreign_key="user.id"
+    )
     project_name: str = Field(
-        min_length=1, max_length=100, description="Project name", index=True)
+        min_length=1, max_length=100, description="Project name", index=True
+    )
     event: EventType = Field(
         sa_column=Column(SAEnum(EventType, native_enum=False), nullable=False),
-        description="Type of event that occurred")
+        description="Type of event that occurred",
+    )
     timestamp: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=False))
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
     # content can be a string (potential values: the requirements.txt file, the requirements
     # themselves, or the analysis result), or None
     content: Optional[str] = None

@@ -70,16 +70,14 @@ async def test_parser_accepts_editable_and_keeps_named():
 
 @pytest.mark.asyncio
 async def test_validator_accepts_includes():
-    uf = _uf("requirements.txt",
-             b"-r other.txt\nrequests==2.32.3\n", "text/plain")
+    uf = _uf("requirements.txt", b"-r other.txt\nrequests==2.32.3\n", "text/plain")
     result = await validate_requirements_file(uf)
     assert result
 
 
 @pytest.mark.asyncio
 async def test_parser_accepts_includes():
-    uf = _uf("requirements.txt",
-             b"-r other.txt\nrequests==2.32.3\n", "text/plain")
+    uf = _uf("requirements.txt", b"-r other.txt\nrequests==2.32.3\n", "text/plain")
     lines = await parse_requirements_file(uf)
     # includes line is skipped by the parser
     assert not any(line.startswith("-r ") for line in lines)
@@ -89,13 +87,11 @@ async def test_parser_accepts_includes():
 
 @pytest.mark.asyncio
 async def test_validator_wrong_media_type():
-    uf = _uf("requirements.txt", b"requests==2.32.3\n",
-             "application/octet-stream")
+    uf = _uf("requirements.txt", b"requests==2.32.3\n", "application/octet-stream")
     with pytest.raises(HTTPException) as ex:
         await validate_requirements_file(uf)
     assert ex.value.status_code == 415
-    assert "upload a text/plain requirements.txt file" in str(
-        ex.value.detail).lower()
+    assert "upload a text/plain requirements.txt file" in str(ex.value.detail).lower()
 
 
 @pytest.mark.asyncio
